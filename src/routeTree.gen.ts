@@ -9,38 +9,189 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as EmployeeRouteImport } from './routes/employee'
+import { Route as DirectorRouteImport } from './routes/director'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EmployeeIndexRouteImport } from './routes/employee.index'
+import { Route as DirectorIndexRouteImport } from './routes/director.index'
+import { Route as LoginEmployeeRouteImport } from './routes/login.employee'
+import { Route as LoginDirectorRouteImport } from './routes/login.director'
+import { Route as FFormIdRouteImport } from './routes/f.$formId'
+import { Route as EmployeeArchiveRouteImport } from './routes/employee.archive'
+import { Route as DirectorFormsRouteImport } from './routes/director.forms'
+import { Route as DirectorEmployeesRouteImport } from './routes/director.employees'
+import { Route as DirectorClientsRouteImport } from './routes/director.clients'
 
+const EmployeeRoute = EmployeeRouteImport.update({
+  id: '/employee',
+  path: '/employee',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DirectorRoute = DirectorRouteImport.update({
+  id: '/director',
+  path: '/director',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmployeeIndexRoute = EmployeeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EmployeeRoute,
+} as any)
+const DirectorIndexRoute = DirectorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DirectorRoute,
+} as any)
+const LoginEmployeeRoute = LoginEmployeeRouteImport.update({
+  id: '/login/employee',
+  path: '/login/employee',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginDirectorRoute = LoginDirectorRouteImport.update({
+  id: '/login/director',
+  path: '/login/director',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FFormIdRoute = FFormIdRouteImport.update({
+  id: '/f/$formId',
+  path: '/f/$formId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmployeeArchiveRoute = EmployeeArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => EmployeeRoute,
+} as any)
+const DirectorFormsRoute = DirectorFormsRouteImport.update({
+  id: '/forms',
+  path: '/forms',
+  getParentRoute: () => DirectorRoute,
+} as any)
+const DirectorEmployeesRoute = DirectorEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => DirectorRoute,
+} as any)
+const DirectorClientsRoute = DirectorClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => DirectorRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/director': typeof DirectorRouteWithChildren
+  '/employee': typeof EmployeeRouteWithChildren
+  '/director/clients': typeof DirectorClientsRoute
+  '/director/employees': typeof DirectorEmployeesRoute
+  '/director/forms': typeof DirectorFormsRoute
+  '/employee/archive': typeof EmployeeArchiveRoute
+  '/f/$formId': typeof FFormIdRoute
+  '/login/director': typeof LoginDirectorRoute
+  '/login/employee': typeof LoginEmployeeRoute
+  '/director/': typeof DirectorIndexRoute
+  '/employee/': typeof EmployeeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/director/clients': typeof DirectorClientsRoute
+  '/director/employees': typeof DirectorEmployeesRoute
+  '/director/forms': typeof DirectorFormsRoute
+  '/employee/archive': typeof EmployeeArchiveRoute
+  '/f/$formId': typeof FFormIdRoute
+  '/login/director': typeof LoginDirectorRoute
+  '/login/employee': typeof LoginEmployeeRoute
+  '/director': typeof DirectorIndexRoute
+  '/employee': typeof EmployeeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/director': typeof DirectorRouteWithChildren
+  '/employee': typeof EmployeeRouteWithChildren
+  '/director/clients': typeof DirectorClientsRoute
+  '/director/employees': typeof DirectorEmployeesRoute
+  '/director/forms': typeof DirectorFormsRoute
+  '/employee/archive': typeof EmployeeArchiveRoute
+  '/f/$formId': typeof FFormIdRoute
+  '/login/director': typeof LoginDirectorRoute
+  '/login/employee': typeof LoginEmployeeRoute
+  '/director/': typeof DirectorIndexRoute
+  '/employee/': typeof EmployeeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/director'
+    | '/employee'
+    | '/director/clients'
+    | '/director/employees'
+    | '/director/forms'
+    | '/employee/archive'
+    | '/f/$formId'
+    | '/login/director'
+    | '/login/employee'
+    | '/director/'
+    | '/employee/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/director/clients'
+    | '/director/employees'
+    | '/director/forms'
+    | '/employee/archive'
+    | '/f/$formId'
+    | '/login/director'
+    | '/login/employee'
+    | '/director'
+    | '/employee'
+  id:
+    | '__root__'
+    | '/'
+    | '/director'
+    | '/employee'
+    | '/director/clients'
+    | '/director/employees'
+    | '/director/forms'
+    | '/employee/archive'
+    | '/f/$formId'
+    | '/login/director'
+    | '/login/employee'
+    | '/director/'
+    | '/employee/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DirectorRoute: typeof DirectorRouteWithChildren
+  EmployeeRoute: typeof EmployeeRouteWithChildren
+  FFormIdRoute: typeof FFormIdRoute
+  LoginDirectorRoute: typeof LoginDirectorRoute
+  LoginEmployeeRoute: typeof LoginEmployeeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/employee': {
+      id: '/employee'
+      path: '/employee'
+      fullPath: '/employee'
+      preLoaderRoute: typeof EmployeeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/director': {
+      id: '/director'
+      path: '/director'
+      fullPath: '/director'
+      preLoaderRoute: typeof DirectorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +199,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/employee/': {
+      id: '/employee/'
+      path: '/'
+      fullPath: '/employee/'
+      preLoaderRoute: typeof EmployeeIndexRouteImport
+      parentRoute: typeof EmployeeRoute
+    }
+    '/director/': {
+      id: '/director/'
+      path: '/'
+      fullPath: '/director/'
+      preLoaderRoute: typeof DirectorIndexRouteImport
+      parentRoute: typeof DirectorRoute
+    }
+    '/login/employee': {
+      id: '/login/employee'
+      path: '/login/employee'
+      fullPath: '/login/employee'
+      preLoaderRoute: typeof LoginEmployeeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/director': {
+      id: '/login/director'
+      path: '/login/director'
+      fullPath: '/login/director'
+      preLoaderRoute: typeof LoginDirectorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$formId': {
+      id: '/f/$formId'
+      path: '/f/$formId'
+      fullPath: '/f/$formId'
+      preLoaderRoute: typeof FFormIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/employee/archive': {
+      id: '/employee/archive'
+      path: '/archive'
+      fullPath: '/employee/archive'
+      preLoaderRoute: typeof EmployeeArchiveRouteImport
+      parentRoute: typeof EmployeeRoute
+    }
+    '/director/forms': {
+      id: '/director/forms'
+      path: '/forms'
+      fullPath: '/director/forms'
+      preLoaderRoute: typeof DirectorFormsRouteImport
+      parentRoute: typeof DirectorRoute
+    }
+    '/director/employees': {
+      id: '/director/employees'
+      path: '/employees'
+      fullPath: '/director/employees'
+      preLoaderRoute: typeof DirectorEmployeesRouteImport
+      parentRoute: typeof DirectorRoute
+    }
+    '/director/clients': {
+      id: '/director/clients'
+      path: '/clients'
+      fullPath: '/director/clients'
+      preLoaderRoute: typeof DirectorClientsRouteImport
+      parentRoute: typeof DirectorRoute
+    }
   }
 }
 
+interface DirectorRouteChildren {
+  DirectorClientsRoute: typeof DirectorClientsRoute
+  DirectorEmployeesRoute: typeof DirectorEmployeesRoute
+  DirectorFormsRoute: typeof DirectorFormsRoute
+  DirectorIndexRoute: typeof DirectorIndexRoute
+}
+
+const DirectorRouteChildren: DirectorRouteChildren = {
+  DirectorClientsRoute: DirectorClientsRoute,
+  DirectorEmployeesRoute: DirectorEmployeesRoute,
+  DirectorFormsRoute: DirectorFormsRoute,
+  DirectorIndexRoute: DirectorIndexRoute,
+}
+
+const DirectorRouteWithChildren = DirectorRoute._addFileChildren(
+  DirectorRouteChildren,
+)
+
+interface EmployeeRouteChildren {
+  EmployeeArchiveRoute: typeof EmployeeArchiveRoute
+  EmployeeIndexRoute: typeof EmployeeIndexRoute
+}
+
+const EmployeeRouteChildren: EmployeeRouteChildren = {
+  EmployeeArchiveRoute: EmployeeArchiveRoute,
+  EmployeeIndexRoute: EmployeeIndexRoute,
+}
+
+const EmployeeRouteWithChildren = EmployeeRoute._addFileChildren(
+  EmployeeRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DirectorRoute: DirectorRouteWithChildren,
+  EmployeeRoute: EmployeeRouteWithChildren,
+  FFormIdRoute: FFormIdRoute,
+  LoginDirectorRoute: LoginDirectorRoute,
+  LoginEmployeeRoute: LoginEmployeeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
