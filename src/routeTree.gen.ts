@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DirectorRouteImport } from './routes/director'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DirectorIndexRouteImport } from './routes/director.index'
 import { Route as LoginEmployeeRouteImport } from './routes/login.employee'
 import { Route as LoginDirectorRouteImport } from './routes/login.director'
+import { Route as DirectorEmployeesRouteImport } from './routes/director.employees'
 
 const DirectorRoute = DirectorRouteImport.update({
   id: '/director',
@@ -24,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DirectorIndexRoute = DirectorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DirectorRoute,
+} as any)
 const LoginEmployeeRoute = LoginEmployeeRouteImport.update({
   id: '/login/employee',
   path: '/login/employee',
@@ -34,37 +41,65 @@ const LoginDirectorRoute = LoginDirectorRouteImport.update({
   path: '/login/director',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DirectorEmployeesRoute = DirectorEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => DirectorRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/director': typeof DirectorRoute
+  '/director': typeof DirectorRouteWithChildren
+  '/director/employees': typeof DirectorEmployeesRoute
   '/login/director': typeof LoginDirectorRoute
   '/login/employee': typeof LoginEmployeeRoute
+  '/director/': typeof DirectorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/director': typeof DirectorRoute
+  '/director/employees': typeof DirectorEmployeesRoute
   '/login/director': typeof LoginDirectorRoute
   '/login/employee': typeof LoginEmployeeRoute
+  '/director': typeof DirectorIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/director': typeof DirectorRoute
+  '/director': typeof DirectorRouteWithChildren
+  '/director/employees': typeof DirectorEmployeesRoute
   '/login/director': typeof LoginDirectorRoute
   '/login/employee': typeof LoginEmployeeRoute
+  '/director/': typeof DirectorIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/director' | '/login/director' | '/login/employee'
+  fullPaths:
+    | '/'
+    | '/director'
+    | '/director/employees'
+    | '/login/director'
+    | '/login/employee'
+    | '/director/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/director' | '/login/director' | '/login/employee'
-  id: '__root__' | '/' | '/director' | '/login/director' | '/login/employee'
+  to:
+    | '/'
+    | '/director/employees'
+    | '/login/director'
+    | '/login/employee'
+    | '/director'
+  id:
+    | '__root__'
+    | '/'
+    | '/director'
+    | '/director/employees'
+    | '/login/director'
+    | '/login/employee'
+    | '/director/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DirectorRoute: typeof DirectorRoute
+  DirectorRoute: typeof DirectorRouteWithChildren
   LoginDirectorRoute: typeof LoginDirectorRoute
   LoginEmployeeRoute: typeof LoginEmployeeRoute
 }
@@ -85,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/director/': {
+      id: '/director/'
+      path: '/'
+      fullPath: '/director/'
+      preLoaderRoute: typeof DirectorIndexRouteImport
+      parentRoute: typeof DirectorRoute
+    }
     '/login/employee': {
       id: '/login/employee'
       path: '/login/employee'
@@ -99,12 +141,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginDirectorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/director/employees': {
+      id: '/director/employees'
+      path: '/employees'
+      fullPath: '/director/employees'
+      preLoaderRoute: typeof DirectorEmployeesRouteImport
+      parentRoute: typeof DirectorRoute
+    }
   }
 }
 
+interface DirectorRouteChildren {
+  DirectorEmployeesRoute: typeof DirectorEmployeesRoute
+  DirectorIndexRoute: typeof DirectorIndexRoute
+}
+
+const DirectorRouteChildren: DirectorRouteChildren = {
+  DirectorEmployeesRoute: DirectorEmployeesRoute,
+  DirectorIndexRoute: DirectorIndexRoute,
+}
+
+const DirectorRouteWithChildren = DirectorRoute._addFileChildren(
+  DirectorRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DirectorRoute: DirectorRoute,
+  DirectorRoute: DirectorRouteWithChildren,
   LoginDirectorRoute: LoginDirectorRoute,
   LoginEmployeeRoute: LoginEmployeeRoute,
 }
