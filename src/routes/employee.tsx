@@ -19,16 +19,19 @@ function EmployeeLayout() {
     }
   }, [session, navigate]);
 
-  if (!session || session.role !== "employee") return null;
-
-  const me = state.employees.find((e) => e.id === session.employeeId);
+  const me =
+    session?.role === "employee"
+      ? state.employees.find((e) => e.id === session.employeeId)
+      : null;
 
   // If employee got deleted, log out
   useEffect(() => {
-    if (session.role === "employee" && !state.employees.find((e) => e.id === session.employeeId)) {
+    if (session?.role === "employee" && !state.employees.find((e) => e.id === session.employeeId)) {
       navigate({ to: "/login/employee" });
     }
   }, [state.employees, session, navigate]);
+
+  if (!session || session.role !== "employee") return null;
 
   return (
     <div className="min-h-screen flex bg-background">
