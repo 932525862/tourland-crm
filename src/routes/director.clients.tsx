@@ -14,16 +14,26 @@ export const Route = createFileRoute("/director/clients")({
 function DirectorClients() {
   const { state, update } = useAppState();
   const [activeCat, setActiveCat] = useState(state.categories[0]?.id ?? "");
+  const [saleTab, setSaleTab] = useState<"unsold" | "sold">("unsold");
   const [openClient, setOpenClient] = useState<Client | null>(null);
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [showAddClient, setShowAddClient] = useState(false);
 
   const currentCat = state.categories.find((c) => c.id === activeCat) ?? state.categories[0];
-  const filtered = useMemo(
+  const inCat = useMemo(
     () => state.clients.filter((c) => c.categoryId === currentCat?.id),
     [state.clients, currentCat]
   );
+  const filtered = useMemo(
+    () =>
+      saleTab === "sold"
+        ? inCat.filter((c) => c.sale && c.sale.status !== "none")
+        : inCat.filter((c) => !c.sale || c.sale.status === "none"),
+    [inCat, saleTab]
+  );
+  const soldCount = inCat.filter((c) => c.sale && c.sale.status !== "none").length;
+  const unsoldCount = inCat.length - soldCount;
 
   return (
     <div className="p-6 md:p-10">
