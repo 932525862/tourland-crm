@@ -96,8 +96,10 @@ export interface AttendanceRecord {
   employeeId: string;
   employeeName: string;
   checkInAt: string; // ISO datetime
+  checkOutAt?: string; // ISO datetime
   date: string; // YYYY-MM-DD
-  photo?: string; // dataURL
+  photo?: string; // dataURL (check-in)
+  checkOutPhoto?: string; // dataURL (check-out)
 }
 
 export type TaskStatus = "new" | "in_progress" | "done" | "approved";
