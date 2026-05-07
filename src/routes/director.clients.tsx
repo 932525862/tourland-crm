@@ -5,7 +5,14 @@ import { ClientDetailDialog } from "@/components/ClientDetailDialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { FolderPlus, User as UserIcon, Bell, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import type { Client } from "@/lib/types";
+import type { Client, ClientStage } from "@/lib/types";
+
+const STAGES: { id: ClientStage; label: string }[] = [
+  { id: "new", label: "Yangi" },
+  { id: "no_answer", label: "Ko'tarmadi" },
+  { id: "talked", label: "Gaplashildi" },
+  { id: "sold", label: "Sotildi" },
+];
 
 export const Route = createFileRoute("/director/clients")({
   component: DirectorClients,
