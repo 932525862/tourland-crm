@@ -83,9 +83,9 @@ export function CameraCheckInDialog({ open, onOpenChange, onConfirm, title, desc
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Davomatga kelish</DialogTitle>
+          <DialogTitle>{title ?? "Davomatga kelish"}</DialogTitle>
           <DialogDescription>
-            Kameraga ruxsat bering va suratga olib davomatni yakunlang.
+            {description ?? "Kameraga ruxsat bering va suratga olib davomatni yakunlang."}
           </DialogDescription>
         </DialogHeader>
 
