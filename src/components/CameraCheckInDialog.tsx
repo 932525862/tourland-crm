@@ -7,9 +7,12 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onConfirm: (photoDataUrl: string) => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
-export function CameraCheckInDialog({ open, onOpenChange, onConfirm }: Props) {
+export function CameraCheckInDialog({ open, onOpenChange, onConfirm, title, description, confirmLabel }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -80,9 +83,9 @@ export function CameraCheckInDialog({ open, onOpenChange, onConfirm }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Davomatga kelish</DialogTitle>
+          <DialogTitle>{title ?? "Davomatga kelish"}</DialogTitle>
           <DialogDescription>
-            Kameraga ruxsat bering va suratga olib davomatni yakunlang.
+            {description ?? "Kameraga ruxsat bering va suratga olib davomatni yakunlang."}
           </DialogDescription>
         </DialogHeader>
 
@@ -119,7 +122,7 @@ export function CameraCheckInDialog({ open, onOpenChange, onConfirm }: Props) {
                   onClick={finish}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--gradient-primary)] text-primary-foreground font-medium shadow-[var(--shadow-md)]"
                 >
-                  <Check className="w-4 h-4" /> Davomatni yakunlash
+                  <Check className="w-4 h-4" /> {confirmLabel ?? "Davomatni yakunlash"}
                 </button>
               </>
             )}
