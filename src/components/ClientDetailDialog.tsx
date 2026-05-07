@@ -69,11 +69,10 @@ export function ClientDetailDialog({
     toast.success("Izoh qo'shildi");
   };
 
-  const handleMove = () => {
-    if (moveTo === client.categoryId) return;
-    update((s) => updateClient(s, client.id, { categoryId: moveTo }));
-    const cat = state.categories.find((c) => c.id === moveTo);
-    toast.success(`"${cat?.name}" bo'limiga ko'chirildi`);
+  const handleMoveStage = () => {
+    if (moveStage === client.stage) return;
+    update((s) => updateClient(s, client.id, { stage: moveStage }));
+    toast.success(`"${STAGE_LABELS[moveStage]}" bo'limiga ko'chirildi`);
   };
 
   const handleStartCall = () => {
