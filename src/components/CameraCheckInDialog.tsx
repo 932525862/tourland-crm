@@ -7,9 +7,12 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onConfirm: (photoDataUrl: string) => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
-export function CameraCheckInDialog({ open, onOpenChange, onConfirm }: Props) {
+export function CameraCheckInDialog({ open, onOpenChange, onConfirm, title, description, confirmLabel }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
