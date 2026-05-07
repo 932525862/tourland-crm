@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { X, Phone, MessageSquare, Bell, ArrowRightLeft, Trash2, ShoppingCart, CheckCircle2, Wallet } from "lucide-react";
-import type { Client, AppState, PaymentEntry, SaleInfo } from "@/lib/types";
+import type { Client, AppState, PaymentEntry, SaleInfo, ClientStage } from "@/lib/types";
 import { updateClient, uid } from "@/lib/store";
 import { toast } from "sonner";
+
+const STAGE_LABELS: Record<ClientStage, string> = {
+  new: "Yangi",
+  no_answer: "Ko'tarmadi",
+  talked: "Gaplashildi",
+  sold: "Sotildi",
+};
 
 interface Props {
   client: Client;
