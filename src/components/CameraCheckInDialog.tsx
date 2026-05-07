@@ -122,7 +122,7 @@ export function CameraCheckInDialog({ open, onOpenChange, onConfirm, title, desc
                   onClick={finish}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--gradient-primary)] text-primary-foreground font-medium shadow-[var(--shadow-md)]"
                 >
-                  <Check className="w-4 h-4" /> Davomatni yakunlash
+                  <Check className="w-4 h-4" /> {confirmLabel ?? "Davomatni yakunlash"}
                 </button>
               </>
             )}
