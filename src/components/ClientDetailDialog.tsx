@@ -549,6 +549,67 @@ export function ClientDetailDialog({
             </section>
           )}
 
+          {/* Telegram */}
+          <section className="rounded-xl border border-border p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Send className="w-4 h-4" /> Telegram
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Mijoz avval botga <code className="px-1 rounded bg-secondary">/start</code> yuborishi kerak. Keyin uni ro'yxatdan tanlang.
+            </p>
+            <div className="flex gap-2">
+              <select
+                value={client.telegramChatId ? String(client.telegramChatId) : ""}
+                onChange={(e) => handleAssignTelegram(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm"
+              >
+                <option value="">— Telegram foydalanuvchini tanlang —</option>
+                {client.telegramChatId && !botUsers.find((u) => u.chatId === client.telegramChatId) && (
+                  <option value={String(client.telegramChatId)}>
+                    {client.telegramUsername ?? `chat ${client.telegramChatId}`} (saqlangan)
+                  </option>
+                )}
+                {botUsers.map((u) => (
+                  <option key={u.chatId} value={String(u.chatId)}>
+                    {(u.username ? "@" + u.username : "") + " " + (u.firstName ?? "") + " " + (u.lastName ?? "")} — {u.chatId}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={loadBotUsers}
+                disabled={tgLoading}
+                className="px-3 py-2 rounded-lg border border-border text-sm inline-flex items-center gap-1 hover:bg-secondary"
+                title="Yangilash"
+              >
+                <RefreshCw className={`w-4 h-4 ${tgLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+            {client.telegramChatId && (
+              <div className="flex gap-2">
+                <input
+                  value={tgMsg}
+                  onChange={(e) => setTgMsg(e.target.value)}
+                  placeholder="Telegramga xabar matni..."
+                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm"
+                />
+                <button
+                  onClick={handleSendTelegramNow}
+                  className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1"
+                >
+                  <Send className="w-4 h-4" /> Yuborish
+                </button>
+              </div>
+            )}
+            {sale.status === "partial" && sale.nextPaymentAt && (
+              <div className="text-xs text-muted-foreground">
+                {client.telegramChatId
+                  ? `Avtomatik eslatma yuboriladi: ${new Date(new Date(sale.nextPaymentAt).getTime() - 60 * 60 * 1000).toLocaleString("uz-UZ")} (to'lovdan 1 soat oldin)`
+                  : "To'lovdan 1 soat oldin avtomatik Telegram eslatma uchun foydalanuvchini biriktiring."}
+                {sale.telegramReminderSentAt && " ✓ yuborilgan"}
+              </div>
+            )}
+          </section>
+
           {/* Notes */}
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
