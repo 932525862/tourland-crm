@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { Archive, RefreshCw, Clock, Search, CheckSquare, Users, FileText, CalendarCheck, User } from "lucide-react";
 import { API } from "@/lib/api/client";
+import { formatUzStatus, formatUzDateTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/uz-latn";
@@ -241,14 +242,14 @@ function DirectorArchive() {
                     {log.details?.oldStatus && (
                       <>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.oldStatus)}`}>
-                          {log.details.oldStatus}
+                          {formatUzStatus(log.details.oldStatus)}
                         </span>
                         <span className="text-muted-foreground">→</span>
                       </>
                     )}
                     {log.details?.newStatus && (
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.newStatus)}`}>
-                        {log.details.newStatus}
+                        {formatUzStatus(log.details.newStatus)}
                       </span>
                     )}
                   </div>

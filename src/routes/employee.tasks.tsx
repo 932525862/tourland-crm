@@ -5,6 +5,7 @@ import { Clock, Check, CheckCheck, ListChecks, X, Calendar, AlertCircle, Play, S
 import { toast } from "sonner";
 import { playNotificationSound } from "@/lib/notify";
 import { API } from "@/lib/api/client";
+import { formatUzDate } from "@/lib/date-utils";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +20,9 @@ export const Route = createFileRoute("/employee/tasks")({
 
 function statusBadge(s: TaskStatus) {
   const map: Record<TaskStatus, { label: string; cls: string; Icon: any }> = {
-    new: { label: "Todo", cls: "bg-blue-100 text-blue-700 border-blue-200", Icon: ListChecks },
+    new: { label: "Yangi", cls: "bg-blue-100 text-blue-700 border-blue-200", Icon: ListChecks },
     in_progress: { label: "Jarayonda", cls: "bg-amber-100 text-amber-700 border-amber-200", Icon: Clock },
-    done: { label: "Kutilmoqda", cls: "bg-purple-100 text-purple-700 border-purple-200", Icon: Check },
+    done: { label: "Tekshiruvda", cls: "bg-purple-100 text-purple-700 border-purple-200", Icon: Check },
     approved: { label: "Bajarildi", cls: "bg-emerald-100 text-emerald-700 border-emerald-200", Icon: CheckCheck },
     rejected: { label: "Rad etildi", cls: "bg-destructive/10 text-destructive border-destructive/20", Icon: X },
   };
@@ -176,7 +177,7 @@ function EmployeeTasks() {
                 </div>
                 <div className="text-right flex flex-col items-end border-l border-border pl-6 hidden sm:flex">
                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Sana</p>
-                   <p className="text-xs font-bold text-foreground">{new Date(t.createdAt).toLocaleDateString("uz-UZ")}</p>
+                   <p className="text-xs font-bold text-foreground">{formatUzDate(t.createdAt, { includeYear: true })}</p>
                 </div>
               </div>
             </button>
@@ -213,9 +214,9 @@ function EmployeeTasks() {
                        <Calendar className="w-5 h-5 text-primary" />
                        <div>
                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Muddat</p>
-                         <p className="text-xs font-bold text-foreground">
-                           {view.startDate} — {view.endDate}
-                         </p>
+                          <p className="text-xs font-bold text-foreground">
+                            {formatUzDate(view.startDate)} — {formatUzDate(view.endDate)}
+                          </p>
                        </div>
                     </div>
                     <div className="flex items-center gap-3">

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { Archive, RefreshCw, Clock, Search, CheckSquare, Users, FileText, CalendarCheck } from "lucide-react";
 import { API } from "@/lib/api/client";
+import { formatUzStatus, formatUzDateTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/uz-latn";
@@ -209,21 +210,21 @@ function EmployeeArchive() {
                     {log.details?.oldStatus && (
                       <>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.oldStatus)}`}>
-                          {log.details.oldStatus}
+                          {formatUzStatus(log.details.oldStatus)}
                         </span>
                         <span className="text-muted-foreground">→</span>
                       </>
                     )}
                     {log.details?.newStatus && (
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.newStatus)}`}>
-                        {log.details.newStatus}
+                        {formatUzStatus(log.details.newStatus)}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
                   <div className="text-[10px] font-medium text-foreground">
-                    {dayjs(log.createdAt).locale("uz-latn").format("DD MMM, HH:mm")}
+                    {formatUzDateTime(log.createdAt)}
                   </div>
                   <div className="text-[9px] text-muted-foreground uppercase tracking-widest">
                     Muvaffaqiyatli

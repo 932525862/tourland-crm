@@ -5,6 +5,7 @@ import { Plus, ListChecks, Check, Clock, CheckCheck, X, RotateCcw } from "lucide
 import { toast } from "sonner";
 import { playNotificationSound } from "@/lib/notify";
 import { API } from "@/lib/api/client";
+import { formatUzDate } from "@/lib/date-utils";
 import {
   Dialog,
   DialogContent,
@@ -34,9 +35,9 @@ const tabs: { id: "active" | "done"; label: string }[] = [
 
 function statusBadge(s: TaskStatus) {
   const map: Record<TaskStatus, { label: string; cls: string; Icon: any }> = {
-    new: { label: "Todo", cls: "bg-blue-100 text-blue-700", Icon: ListChecks },
+    new: { label: "Yangi", cls: "bg-blue-100 text-blue-700", Icon: ListChecks },
     in_progress: { label: "Jarayonda", cls: "bg-amber-100 text-amber-700", Icon: Clock },
-    done: { label: "Kutilmoqda", cls: "bg-purple-100 text-purple-700", Icon: Check },
+    done: { label: "Tekshiruvda", cls: "bg-purple-100 text-purple-700", Icon: Check },
     approved: { label: "Bajarildi", cls: "bg-emerald-100 text-emerald-700", Icon: CheckCheck },
     rejected: { label: "Rad etildi", cls: "bg-destructive/10 text-destructive", Icon: X },
   };
@@ -336,13 +337,26 @@ function DirectorTasks() {
                   <div className="p-4 rounded-2xl border border-border/50 bg-secondary/10">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Hodim</p>
                     <p className="font-bold flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      <span className="w-2 h-2 rounded-full bg-primary" />
                       {empName(view.assignedTo)}
                     </p>
                   </div>
                   <div className="p-4 rounded-2xl border border-border/50 bg-secondary/10">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Sana</p>
-                    <p className="font-bold">{new Date(view.createdAt).toLocaleDateString("uz-UZ")}</p>
+                    <p className="font-bold">{formatUzDate(view.createdAt, { includeYear: true })}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="p-4 rounded-2xl border border-border/50 bg-secondary/10">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Muddat</p>
+                    <p className="text-xs font-bold text-foreground">
+                      {formatUzDate(view.startDate)} — {formatUzDate(view.endDate)}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-2xl border border-border/50 bg-secondary/10">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Eslatma</p>
+                    <p className="text-xs font-bold text-foreground">{view.notifyAt}</p>
                   </div>
                 </div>
               </div>

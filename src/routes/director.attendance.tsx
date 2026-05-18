@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useAppState } from "@/lib/store";
 import { API, assetUrl } from "@/lib/api/client";
-import { formatUzDate, formatUzMonth, formatUzDateTable } from "@/lib/date-utils";
+import { formatUzDate, formatUzMonth, formatUzDateTable, formatUzTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -25,11 +25,7 @@ export const Route = createFileRoute("/director/attendance")({
 });
 
 function fmtTime(iso?: string) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("uz-UZ", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatUzTime(iso || "");
 }
 
 function fmtDate(dateStr: string) {

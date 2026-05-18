@@ -16,7 +16,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { API, assetUrl } from "@/lib/api/client";
-import { formatUzMonth, formatUzDateTable } from "@/lib/date-utils";
+import { formatUzMonth, formatUzDateTable, formatUzTime } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/employee/attendance")({
@@ -34,11 +34,7 @@ function currentYM() {
 }
 
 function fmtTime(iso?: string) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("uz-UZ", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatUzTime(iso || "");
 }
 
 function hoursWorked(rec: { checkInAt: string; checkOutAt?: string }) {

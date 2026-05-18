@@ -34,12 +34,13 @@ A modern, role-based CRM admin dashboard for **Tourland**, built with React 19, 
 | Framework | [TanStack Start](https://tanstack.com/start) + [TanStack Router](https://tanstack.com/router) |
 | UI | React 19, Radix UI, shadcn/ui primitives |
 | Styling | Tailwind CSS v4 |
+| Localization | Professional Uzbek (Asia/Tashkent Timezone) |
 | Forms | React Hook Form + Zod |
 | Data Fetching | TanStack Query v5 |
 | Real-time | Socket.IO Client |
 | Charts | Recharts |
 | Build | Vite 7 |
-| Deployment | Vercel |
+| Deployment | Vercel (SSR optimized) |
 
 ---
 
@@ -62,11 +63,11 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file in the root (see `.env.example` if available):
+Create a `.env` file in the root:
 
 ```env
-VITE_API_URL=http://localhost:3000
-VITE_SOCKET_URL=http://localhost:3000
+VITE_API_URL=https://your-api.com
+VITE_SOCKET_URL=https://your-api.com
 ```
 
 ### Development
@@ -81,52 +82,36 @@ npm run dev
 npm run build
 ```
 
-### Preview Production Build
-
-```bash
-npm run preview
-```
-
 ---
 
 ## Project Structure
 
 ```
 src/
-├── routes/
+├── routes/                    # File-based routing (TanStack Router)
 │   ├── index.tsx              # Login / landing
-│   ├── director.tsx           # Director layout
-│   ├── director.index.tsx     # Director dashboard
-│   ├── director.employees.tsx
-│   ├── director.tasks.tsx
-│   ├── director.forms.tsx
-│   ├── director.clients.tsx
-│   ├── director.departments.tsx
-│   ├── director.attendance.tsx
-│   ├── director.stats.tsx
-│   ├── director.archive.tsx
-│   ├── employee.tsx           # Employee layout
-│   ├── employee.index.tsx     # Employee dashboard
-│   ├── employee.tasks.tsx
-│   ├── employee.forms.tsx
-│   └── ...
-├── components/                # Shared UI components
-└── lib/                       # API clients, utilities
+│   ├── director.*.tsx         # Director-scoped pages
+│   ├── employee.*.tsx         # Employee-scoped pages
+│   └── __root.tsx             # Application shell & SSR setup
+├── components/                # Shared UI components (shadcn/ui)
+├── hooks/                     # Custom React hooks
+├── lib/                       # API clients, state store, & utilities
+│   ├── date-utils.ts          # Uzbek localization & timezone logic
+│   └── store.ts               # Global state management
+└── styles.css                 # Global styles (Tailwind v4)
 ```
 
 ---
 
 ## Deployment
 
-This project is configured for **Vercel** deployment. The `vercel.json` rewrites all routes to `index.html` for client-side routing.
+This project is built using **TanStack Start** and is optimized for **Server-Side Rendering (SSR)**.
 
-```json
-{
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
-```
+### Vercel Deployment
 
-Push to `main` to trigger an automatic Vercel deployment.
+Pushing to the `main` branch triggers an automatic deployment.
+- **SSR**: No `vercel.json` rewrites are needed; the framework handles routing and server-side rendering natively.
+- **Timezone**: The application uses `Asia/Tashkent` globally for consistency across all modules (Attendance, Tasks, Archive).
 
 ---
 
