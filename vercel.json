@@ -1,15 +1,18 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(assets|favicon.ico)(.*)",
-      "destination": "/$1$2",
-      "continue": true
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/"
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/"
     }
   ]
 }
