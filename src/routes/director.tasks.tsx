@@ -57,7 +57,7 @@ function DirectorTasks() {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [empId, setEmpId] = useState<string>("");
-  const [notifyAt, setNotifyAt] = useState("09:00 AM");
+  const [notifyAt, setNotifyAt] = useState("09:00");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
   const [view, setView] = useState<Task | null>(null);
@@ -285,9 +285,9 @@ function DirectorTasks() {
             <div className="space-y-1.5">
               <label className="text-sm font-bold px-1">Eslatma vaqti (notifyAt)</label>
               <Input
+                type="time"
                 value={notifyAt}
                 onChange={(e) => setNotifyAt(e.target.value)}
-                placeholder="masalan: 9:00 AM"
                 className="rounded-xl h-12"
               />
             </div>

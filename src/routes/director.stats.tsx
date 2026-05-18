@@ -34,17 +34,29 @@ function DirectorStats() {
 
   const stats = useMemo(() => {
     const clients = state.clients;
-    const totalClients = clients.length;
-    const soldClients = clients.filter((c) => c.sale?.status === "full");
-    const partialClients = clients.filter((c) => c.sale?.status === "partial");
-    const totalRevenue = clients.reduce(
-      (sum, c) => sum + (c.sale?.payments?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0),
-      0
+    const filteredBaseClients = employeeFilter === "all" 
+      ? clients 
+      : clients.filter(c => c.sale?.completedByName === employeeFilter || c.call?.inCallByName === employeeFilter);
+
+    const totalClients = filteredBaseClients.length;
+
+    const soldClients = clients.filter((c) => 
+      c.sale?.status === "full" && (employeeFilter === "all" || c.sale?.completedByName === employeeFilter)
     );
+    const partialClients = clients.filter((c) => 
+      c.sale?.status === "partial" && (employeeFilter === "all" || c.sale?.completedByName === employeeFilter)
+    );
+    
+    const totalRevenue = clients.reduce((sum, c) => {
+      if (employeeFilter !== "all" && c.sale?.completedByName !== employeeFilter) return sum;
+      return sum + (c.sale?.payments?.reduce((s, p) => s + (p.amount || 0), 0) ?? 0)
+    }, 0);
 
     const byEmployee = new Map<string, { name: string; count: number; revenue: number }>();
-    for (const c of soldClients) {
+    for (const c of clients.filter(c => c.sale?.status === "full")) {
       const name = c.sale?.completedByName ?? "Noma'lum";
+      if (employeeFilter !== "all" && name !== employeeFilter) continue;
+      
       const rev = c.sale?.payments?.reduce((s, p) => s + p.amount, 0) ?? 0;
       const cur = byEmployee.get(name) ?? { name, count: 0, revenue: 0 };
       cur.count += 1;
@@ -53,13 +65,10 @@ function DirectorStats() {
     }
 
     const byCategory = state.categories.map((cat) => {
-      const inCat = clients.filter((c) => c.categoryId === cat.id);
-      const sold = inCat.filter((c) => c.sale?.status === "full");
-      const filteredSold =
-        employeeFilter === "all"
-          ? sold
-          : sold.filter((c) => c.sale?.completedByName === employeeFilter);
-      const revenue = filteredSold.reduce(
+      const inCat = filteredBaseClients.filter((c) => c.categoryId === cat.id);
+      const sold = inCat.filter((c) => c.sale?.status === "full" && (employeeFilter === "all" || c.sale?.completedByName === employeeFilter));
+      
+      const revenue = sold.reduce(
         (s, c) => s + (c.sale?.payments?.reduce((a, p) => a + p.amount, 0) ?? 0),
         0
       );
@@ -67,15 +76,12 @@ function DirectorStats() {
         id: cat.id,
         name: cat.name,
         clients: inCat.length,
-        sold: filteredSold.length,
+        sold: sold.length,
         revenue,
       };
     });
 
     const sales = soldClients
-      .filter((c) =>
-        employeeFilter === "all" ? true : c.sale?.completedByName === employeeFilter
-      )
       .map((c) => ({
         id: c.id,
         name: c.data?.["Ism familya"] || c.name || "Mijoz",

@@ -225,17 +225,18 @@ function FormEditDialog({
   const [title, setTitle] = useState(form?.title ?? "");
   const [categoryId, setCategoryId] = useState(form?.targetCategoryId ?? "");
   
-  // Transform initial options array to a comma-separated string for editing
+  // Initialize form fields with optionsList and a temporary optionInput field for the builder UI
   const [fields, setFields] = useState<any[]>(form?.fields?.map(f => ({
     ...f,
-    optionsString: f.options?.join(", ") || ""
+    optionsList: f.options || [],
+    optionInput: ""
   })) ?? [
-    { label: "Ism familya", type: "text", required: true, optionsString: "" },
-    { label: "Tel raqam", type: "phone", required: true, optionsString: "" }
+    { label: "Ism familya", type: "text", required: true, optionsList: [], optionInput: "" },
+    { label: "Tel raqam", type: "phone", required: true, optionsList: [], optionInput: "" }
   ]);
   const [loading, setLoading] = useState(false);
 
-  const addField = () => setFields([...fields, { label: "", type: "text", required: true, optionsString: "" }]);
+  const addField = () => setFields([...fields, { label: "", type: "text", required: true, optionsList: [], optionInput: "" }]);
   const updateField = (idx: number, patch: any) => setFields(fields.map((f, i) => i === idx ? { ...f, ...patch } : f));
   const removeField = (idx: number) => setFields(fields.filter((_, i) => i !== idx));
   const moveField = (idx: number, dir: number) => {
@@ -253,11 +254,11 @@ function FormEditDialog({
     }
     setLoading(true);
     try {
-      // Transform optionsString back to array
+      // Map optionsList to the target options array
       const mappedFields = fields.map(f => {
         const result = { label: f.label, type: f.type, required: f.required, options: undefined as string[] | undefined };
-        if (["select", "radio", "checkbox", "multi_select"].includes(f.type) && f.optionsString) {
-          result.options = f.optionsString.split(",").map((s: string) => s.trim()).filter(Boolean);
+        if (["select", "radio", "checkbox", "multi_select"].includes(f.type) && f.optionsList?.length > 0) {
+          result.options = f.optionsList;
         }
         return result;
       });
@@ -355,15 +356,58 @@ function FormEditDialog({
                     </button>
                   </div>
                   
-                  {/* Options input only visible for relevant types */}
+                  {/* Options Input Builder */}
                   {["select", "radio", "checkbox", "multi_select"].includes(field.type) && (
-                    <div className="ml-8 mt-1">
-                      <input
-                        value={field.optionsString || ""}
-                        onChange={e => updateField(idx, { optionsString: e.target.value })}
-                        placeholder="Variantlarni vergul bilan yozing (Masalan: Erkak, Ayol)"
-                        className="w-full px-3 py-2 rounded-xl bg-background/50 border border-primary/20 focus:ring-2 focus:ring-primary/30 outline-none text-xs font-medium"
-                      />
+                    <div className="ml-8 mt-2 p-3 rounded-2xl border border-primary/20 bg-background/30 flex flex-col gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {field.optionsList?.map((opt: string, oIdx: number) => (
+                           <div key={oIdx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold border border-primary/20 animate-in fade-in zoom-in duration-200">
+                             {opt}
+                             <button type="button" onClick={() => {
+                               const newList = [...field.optionsList];
+                               newList.splice(oIdx, 1);
+                               updateField(idx, { optionsList: newList });
+                             }} className="hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
+                           </div>
+                        ))}
+                        {(!field.optionsList || field.optionsList.length === 0) && (
+                          <span className="text-xs text-muted-foreground italic py-1.5 px-1 bg-transparent">Variantlar yo'q...</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                           value={field.optionInput || ""}
+                           onChange={e => updateField(idx, { optionInput: e.target.value })}
+                           onKeyDown={e => {
+                             if (e.key === 'Enter') {
+                               e.preventDefault();
+                               if (field.optionInput?.trim()) {
+                                  updateField(idx, { 
+                                     optionsList: [...(field.optionsList || []), field.optionInput.trim()],
+                                     optionInput: ""
+                                  });
+                               }
+                             }
+                           }}
+                           placeholder="Yangi variant qo'shing va Enter bosing"
+                           className="flex-1 px-3 py-2 rounded-xl bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none text-xs font-medium"
+                        />
+                        <button
+                           type="button"
+                           onClick={() => {
+                             if (field.optionInput?.trim()) {
+                                updateField(idx, { 
+                                   optionsList: [...(field.optionsList || []), field.optionInput.trim()],
+                                   optionInput: ""
+                                });
+                             }
+                           }}
+                           disabled={!field.optionInput?.trim()}
+                           className="p-2 rounded-xl bg-primary text-primary-foreground hover:scale-[1.05] active:scale-95 transition-all outline-none shadow-md disabled:opacity-50 disabled:scale-100"
+                        >
+                           <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

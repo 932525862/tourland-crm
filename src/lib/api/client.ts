@@ -12,6 +12,12 @@ const listeners = new Set<(event: string, data: any) => void>();
 export function apiBase() {
   return API_URL ? `${API_URL}/api` : "/api";
 }
+export function assetUrl(path: string) {
+  if (!path) return "";
+  if (path.startsWith("data:") || path.startsWith("http")) return path;
+  const base = API_URL || window.location.origin;
+  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+}
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -42,7 +48,7 @@ export async function api<T = unknown>(
     try {
       const b = await res.json();
       msg = b.message || JSON.stringify(b);
-    } catch {}
+    } catch { }
     throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;
@@ -115,26 +121,26 @@ export const API = {
   }),
   deleteForm: (id: string) => api(`/forms/${id}`, { method: "DELETE" }),
   createEmployee: (data: any) => {
-    return api("/users/employees", { 
-      method: "POST", 
+    return api("/users/employees", {
+      method: "POST",
       json: {
         firstName: data.firstName,
         lastName: data.lastName,
         phoneNumber: data.phoneNumber || data.phone,
         password: data.password
-      } 
+      }
     });
   },
   updateEmployee: (id: string, data: any) => {
-    return api(`/users/employees/${id}`, { 
-      method: "PATCH", 
-      json: { 
+    return api(`/users/employees/${id}`, {
+      method: "PATCH",
+      json: {
         firstName: data.firstName,
         lastName: data.lastName,
         phoneNumber: data.phoneNumber || data.phone,
         password: data.password,
         isActive: data.isActive
-      } 
+      }
     });
   },
   deleteEmployee: (id: string) => api(`/users/${id}/deactivate`, { method: "POST" }),
@@ -180,17 +186,17 @@ export const API = {
       soldAt: c.soldAt
     }
   })),
-  createClient: (data: any) => api("/clients", { 
-    method: "POST", 
-    json: { 
+  createClient: (data: any) => api("/clients", {
+    method: "POST",
+    json: {
       fullName: data.name || data.fullName,
       phoneNumber: data.phone || data.phoneNumber,
       departmentId: data.categoryId || data.departmentId,
       description: data.description || ""
-    } 
+    }
   }),
-  updateClient: (id: string, data: any) => api(`/clients/${id}`, { 
-    method: "PATCH", 
+  updateClient: (id: string, data: any) => api(`/clients/${id}`, {
+    method: "PATCH",
     json: {
       fullName: data.name || data.fullName,
       phoneNumber: data.phone || data.phoneNumber,
@@ -231,7 +237,7 @@ export const API = {
     const mapTask = (t: any) => {
       const template = t.template || t;
       const rawStatus = (t.status || "TODO").toUpperCase();
-      
+
       return {
         id: t.id,
         title: template.title || "Untitled",
@@ -240,8 +246,8 @@ export const API = {
         notifyAt: template.notifyAt || "9:00 AM",
         startDate: template.startDate || "",
         endDate: template.endDate || "",
-        status: (rawStatus === "TODO" 
-          ? "new" 
+        status: (rawStatus === "TODO"
+          ? "new"
           : rawStatus === "PENDING"
             ? "done"
             : rawStatus === "DONE"
@@ -255,21 +261,21 @@ export const API = {
     const path = role === "director" ? "/tasks/director/dashboard" : "/tasks/employee/me";
     return api<any[]>(path).then(list => (Array.isArray(list) ? list.map(mapTask) : []));
   },
-  createTask: (data: { 
-    title: string; 
-    description: string; 
-    assignedTo: string; 
-    notifyAt: string; 
-    startDate: string; 
-    endDate: string 
-  }) => api("/tasks/template", { 
-    method: "POST", 
-    json: data 
+  createTask: (data: {
+    title: string;
+    description: string;
+    assignedTo: string;
+    notifyAt: string;
+    startDate: string;
+    endDate: string
+  }) => api("/tasks/template", {
+    method: "POST",
+    json: data
   }),
-  updateTask: (id: string, data: { status: string }) => api(`/tasks/${id}/status`, { 
-    method: "PATCH", 
-    json: { status: data.status.toLowerCase() } 
-  }), 
+  updateTask: (id: string, data: { status: string }) => api(`/tasks/${id}/status`, {
+    method: "PATCH",
+    json: { status: data.status.toLowerCase() }
+  }),
   verifyTask: (id: string) => api(`/tasks/${id}/verify`, { method: "PATCH" }),
   rejectTask: (id: string) => api(`/tasks/${id}/reject`, { method: "PATCH" }),
   taskSeen: (id: string) => Promise.resolve(), // TODO: Not supported in current CRM backend
@@ -312,6 +318,8 @@ export const API = {
     socket.on("taskStatusChanged", (data) => notify("taskStatusChanged", data));
     socket.on("taskVerified", (data) => notify("taskVerified", data));
     socket.on("taskIncomplete", (data) => notify("taskIncomplete", data));
+    socket.on("attendanceCheckedIn", (data) => notify("attendanceCheckedIn", data));
+    socket.on("attendanceCheckedOut", (data) => notify("attendanceCheckedOut", data));
 
     return () => {
       listeners.delete(onEvent);

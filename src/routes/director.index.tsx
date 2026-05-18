@@ -116,9 +116,9 @@ function DirectorProfile() {
             </div>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--gradient-primary)] text-primary-foreground font-medium shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-glow)] transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg hover:shadow-primary/30 transition-all active:scale-[0.98]"
             >
-              <Save className="w-4 h-4" /> Ma'lumotlarni saqlash
+              <Save className="w-5 h-5" /> Ma'lumotlarni saqlash
             </button>
           </form>
         </div>
@@ -148,7 +148,7 @@ function DirectorProfile() {
             </div>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary text-foreground font-medium hover:bg-secondary/80 transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-secondary text-foreground font-bold border border-border/50 hover:bg-foreground hover:text-background transition-all active:scale-[0.98]"
             >
               Parolni yangilash
             </button>

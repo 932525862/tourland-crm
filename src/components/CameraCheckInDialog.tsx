@@ -106,7 +106,7 @@ export function CameraCheckInDialog({ open, onOpenChange, onConfirm, title, desc
               <button
                 onClick={takePhoto}
                 disabled={!!error}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--gradient-primary)] text-primary-foreground font-medium shadow-[var(--shadow-md)] disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium shadow-md transition-all hover:bg-primary/90 disabled:opacity-50"
               >
                 <Camera className="w-4 h-4" /> Suratga olish
               </button>
@@ -114,13 +114,13 @@ export function CameraCheckInDialog({ open, onOpenChange, onConfirm, title, desc
               <>
                 <button
                   onClick={retake}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-input text-foreground hover:bg-secondary"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-input bg-card text-card-foreground hover:bg-secondary/50 transition-colors"
                 >
                   <X className="w-4 h-4" /> Qayta olish
                 </button>
                 <button
                   onClick={finish}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--gradient-primary)] text-primary-foreground font-medium shadow-[var(--shadow-md)]"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium shadow-md transition-all hover:bg-primary/90"
                 >
                   <Check className="w-4 h-4" /> {confirmLabel ?? "Davomatni yakunlash"}
                 </button>
