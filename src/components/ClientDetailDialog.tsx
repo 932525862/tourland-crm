@@ -168,6 +168,9 @@ export function ClientDetailDialog({
   const handleCompletePayment = async () => {
     setLoading(true);
     try {
+      if (remaining > 0) {
+        await API.addPayment(localClient.id, remaining);
+      }
       await API.setSale(localClient.id, { status: "full" });
       toast.success("To'lov yakunlandi");
       onRefresh();

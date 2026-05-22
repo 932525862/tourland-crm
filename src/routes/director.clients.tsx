@@ -39,6 +39,7 @@ function DirectorClients() {
         API.clients()
       ]);
       update(s => ({ ...s, categories: cats, clients }));
+      setOpenClient(prev => prev ? (clients.find(c => c.id === prev.id) || prev) : null);
       if (!activeCat && cats.length > 0) {
         setActiveCat(cats[0].id);
       }
