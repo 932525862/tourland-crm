@@ -4,10 +4,10 @@ import { useAppState, useSession } from "@/lib/store";
 import { ClientDetailDialog } from "@/components/ClientDetailDialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { ClientCard } from "@/components/ClientCard";
-import { UserPlus, RefreshCw, Search, Layers } from "lucide-react";
+import { UserPlus, RefreshCw, Search, Layers, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { API } from "@/lib/api/client";
-import { playNotificationSound } from "@/lib/notify";
+import { playNotificationSound, showBrowserNotification } from "@/lib/notify";
 import type { Client, ClientStage } from "@/lib/types";
 
 const STAGES: { id: ClientStage; label: string }[] = [
@@ -52,41 +52,63 @@ function EmployeeClients() {
   };
 
   useEffect(() => {
-    if (session?.role === "employee") fetchAll();
-  }, [session]);
-
-  // Reminder Logic
-  useEffect(() => {
-    const check = () => {
-      const now = Date.now();
-      state.clients.forEach((c) => {
-        const name = c.name || "Mijoz";
-        if (c.call?.remindAt) {
-          const t = new Date(c.call.remindAt).getTime();
-          if (t <= now && t > now - 65 * 1000) {
-            playNotificationSound();
-            toast.warning(`Eslatma: ${name} bilan qayta bog'lanish vaqti keldi`, {
-              duration: 10000,
-              action: { label: "Ochish", onClick: () => setOpenClient(c) },
-            });
-          }
+    if (session?.role === "employee") {
+      fetchAll();
+      return API.initSocket((event, data) => {
+        if (event === "clientCallStarted") {
+          update(s => ({
+            ...s,
+            clients: s.clients.map(c => c.id === data.clientId ? { 
+                ...c, 
+                call: { 
+                  ...c.call, 
+                  inCallByEmployeeId: data.employeeId, 
+                  inCallByName: data.employeeName, 
+                  callStartedAt: new Date().toISOString() 
+                } 
+              } : c)
+          }));
         }
-        if (c.sale?.status === "partial" && c.sale.nextPaymentAt) {
-          const due = new Date(c.sale.nextPaymentAt).getTime();
-          if (due <= now && due > now - 65 * 1000) {
-            playNotificationSound();
-            toast.warning(`To'lovni eslat: ${name}`, {
-              duration: 10000,
-              action: { label: "Ochish", onClick: () => setOpenClient(c) },
-            });
-          }
+        if (event === "clientCallEnded") {
+          update(s => ({
+            ...s,
+            clients: s.clients.map(c => c.id === data.clientId ? { 
+              ...c, 
+              call: { ...c.call, inCallByEmployeeId: undefined, inCallByName: undefined, callStartedAt: undefined } 
+            } : c)
+          }));
+        }
+        if (event === "clientUpdated") {
+           // We could do a partial update here, but for simplicity we fetch all or update the specific one
+           // Better to just refresh the specific category or all for now
+           fetchAll(); 
+        }
+        if (event === "clientReminder") {
+           playNotificationSound();
+           showBrowserNotification("Qayta qo'ng'iroq", {
+             body: `${data.name || "Mijoz"} bilan bog'lanish vaqti keldi`,
+             icon: "/favicon.ico"
+           });
+           toast.info(`Eslatma: ${data.name} bilan bog'lanish vaqti keldi`);
+        }
+        if (event === "paymentReminder") {
+           playNotificationSound();
+           showBrowserNotification("To'lov eslatmasi", {
+             body: `${data.name || "Mijoz"} uchun to'lov vaqti o'tdi`,
+             icon: "/favicon.ico"
+           });
+           toast.warning(`To'lov: ${data.name} uchun to'lov vaqti o'tdi`, {
+             duration: 10000,
+           });
         }
       });
-    };
-    const id = setInterval(check, 60_000);
-    check();
-    return () => clearInterval(id);
-  }, [state.clients]);
+    }
+  }, [session]);
+
+  // Reminder Logic (Cleaned up local polling as backend Cron handles it now)
+  useEffect(() => {
+    // Only fetch for updates if needed, backend socket handles the rest
+  }, []);
 
   const visibleCats = state.categories.filter((c) => !c.isArchive);
   const currentCat = visibleCats.find((c) => c.id === activeCat) || visibleCats[0];
@@ -148,21 +170,24 @@ function EmployeeClients() {
             className="w-full pl-12 pr-4 py-4 rounded-[20px] border border-border bg-card focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all font-medium text-lg"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar bg-secondary/30 p-2 rounded-[24px] border border-border/50">
-          {visibleCats.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCat(cat.id)}
-              className={`px-6 py-3 rounded-[18px] text-sm font-bold whitespace-nowrap transition-all ${
-                cat.id === currentCat?.id
-                  ? "bg-card text-primary shadow-md scale-[1.02]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-card/50"
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-          {visibleCats.length === 0 && <p className="px-4 py-2 text-xs text-muted-foreground italic">Bo'limlar mavjud emas</p>}
+        <div className="relative group min-w-[240px]">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-primary group-focus-within:scale-110 transition-transform">
+            <Layers className="w-5 h-5" />
+          </div>
+          <select
+            value={activeCat}
+            onChange={(e) => setActiveCat(e.target.value)}
+            className="w-full pl-12 pr-12 py-4 rounded-[20px] border border-border bg-card appearance-none focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all font-bold text-foreground cursor-pointer shadow-sm hover:border-primary/20"
+          >
+            {visibleCats.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+            <ChevronDown className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
@@ -213,6 +238,7 @@ function EmployeeClients() {
           onClose={() => setOpenClient(null)}
           viewerRole="employee"
           viewerName={meName}
+          viewerId={session?.id}
           enableCallActions
         />
       )}

@@ -218,44 +218,15 @@ function DirectorAttendance() {
             </div>
           </div>
 
-          {/* Status and Month filter */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card shadow-sm">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Hisob holati:</span>
-              <button
-                onClick={async () => {
-                  if (!emp) return;
-                  const newStatus = !emp.isActive;
-                  try {
-                    if (newStatus) await API.activateUser(emp.id);
-                    else await API.deactivateUser(emp.id);
-                    
-                    update(s => ({
-                      ...s,
-                      employees: s.employees.map(e => e.id === emp.id ? { ...e, isActive: newStatus } : e)
-                    }));
-                    toast.success(newStatus ? "Hodim faollashtirildi" : "Hodim bloklandi");
-                  } catch (err) {
-                    toast.error("Holatni o'zgartirishda xatolik");
-                  }
-                }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${emp?.isActive ? 'bg-success' : 'bg-destructive'}`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emp?.isActive ? 'translate-x-6' : 'translate-x-1'}`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <input
-                type="month"
-                value={monthFilter}
-                onChange={(e) => setMonthFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
+          {/* Month filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <input
+              type="month"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
         </div>
 

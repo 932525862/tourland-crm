@@ -28,6 +28,37 @@ export function setToken(t: string | null) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+const REFRESH_TOKEN_KEY = "agency_crm_refresh_token";
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setRefreshToken(t: string | null) {
+  if (typeof window === "undefined") return;
+  if (t) localStorage.setItem(REFRESH_TOKEN_KEY, t);
+  else localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+let isRefreshing = false;
+let refreshQueue: Array<() => void> = [];
+
+async function refreshTokens() {
+  const rt = getRefreshToken();
+  if (!rt) throw new Error("No refresh token");
+  const res = await fetch(`${apiBase()}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: rt }),
+  });
+  if (!res.ok) throw new Error("Refresh failed");
+  const data = await res.json();
+  setToken(data.accessToken);
+  setRefreshToken(data.refreshToken);
+  return data;
+}
+
 export async function api<T = unknown>(
   path: string,
   init: RequestInit & { json?: unknown } = {},
@@ -43,6 +74,35 @@ export async function api<T = unknown>(
     headers,
     body: init.json !== undefined ? JSON.stringify(init.json) : init.body,
   });
+
+  if (res.status === 401 && getRefreshToken() && !path.includes("/auth/refresh")) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        await refreshTokens();
+        isRefreshing = false;
+        refreshQueue.forEach(cb => cb());
+        refreshQueue = [];
+      } catch (e) {
+        isRefreshing = false;
+        refreshQueue = [];
+        setToken(null);
+        setRefreshToken(null);
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        throw e;
+      }
+    } else {
+      return new Promise((resolve, reject) => {
+        refreshQueue.push(() => {
+          api<T>(path, init).then(resolve).catch(reject);
+        });
+      });
+    }
+    return api<T>(path, init);
+  }
+
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {
@@ -60,12 +120,19 @@ export async function api<T = unknown>(
 export const API = {
   // auth
   login: (login: string, password: string) =>
-    api<{ accessToken: string }>(
+    api<{ accessToken: string; refreshToken: string }>(
       "/auth/login",
       { method: "POST", json: { phoneNumber: login, password } },
-    ),
+    ).then(res => {
+        setRefreshToken(res.refreshToken);
+        return res;
+    }),
+  logout: () => {
+    setToken(null);
+    setRefreshToken(null);
+    return api("/auth/logout", { method: "POST" }).catch(() => {});
+  },
   me: () => api<any>("/users/me").then(u => {
-    // CRM returns user info directly, map it to frontend expectations
     return {
       user: {
         sub: u.id,
@@ -167,12 +234,19 @@ export const API = {
       name: c.fullName,
       phone: c.phoneNumber,
       categoryId: c.departmentId,
+      call: {
+        inCallByEmployeeId: c.inCallByEmployeeId,
+        inCallByName: c.inCallByName,
+        startedAt: c.callStartedAt,
+        remindAt: c.remindAt
+      },
       sale: {
-        status: c.saleStatus.toLowerCase(),
+        status: c.saleStatus?.toLowerCase() || 'none',
         totalAmount: c.saleTotalAmount,
         payments: c.payments || [],
         nextPaymentAt: c.nextPaymentAt,
-        soldAt: c.soldAt
+        soldAt: c.soldAt,
+        completedByName: c.soldByName
       }
     })));
   },
@@ -181,12 +255,19 @@ export const API = {
     name: c.fullName,
     phone: c.phoneNumber,
     categoryId: c.departmentId,
+    call: {
+      inCallByEmployeeId: c.inCallByEmployeeId,
+      inCallByName: c.inCallByName,
+      startedAt: c.callStartedAt,
+      remindAt: c.remindAt
+    },
     sale: {
-      status: c.saleStatus.toLowerCase(),
+      status: c.saleStatus?.toLowerCase() || 'none',
       totalAmount: c.saleTotalAmount,
       payments: c.payments || [],
       nextPaymentAt: c.nextPaymentAt,
-      soldAt: c.soldAt
+      soldAt: c.soldAt,
+      completedByName: c.soldByName
     }
   })),
   createClient: (data: any) => api("/clients", {
@@ -204,12 +285,15 @@ export const API = {
       fullName: data.name || data.fullName,
       phoneNumber: data.phone || data.phoneNumber,
       departmentId: data.categoryId || data.departmentId,
-      ...data
+      stage: data.stage,
+      remindAt: data.remindAt,
+      description: data.description,
+      // Pass other fields properly
     }
   }),
   deleteClient: (id: string) => api(`/clients/${id}`, { method: "DELETE" }),
-  callStart: (id: string) => Promise.resolve(), // Not supported in current CRM backend
-  callEnd: (id: string, remindAt?: string) => Promise.resolve(), // Not supported in current CRM backend
+  callStart: (id: string) => api(`/clients/${id}/call/start`, { method: "POST" }),
+  callEnd: (id: string, remindAt?: string) => Promise.resolve(), // Not supported in current CRM backend unless done via updateClient
   addNote: (id: string, text: string) => api(`/clients/${id}/notes`, { method: "POST", json: { text } }),
   addPayment: (id: string, amount: number) => api(`/clients/${id}/payments`, { method: "POST", json: { amount } }),
   setSale: (id: string, data: any) => api(`/clients/${id}/sale`, { method: "PATCH", json: data }),
@@ -340,6 +424,11 @@ export const API = {
     socket.on("taskIncomplete", (data) => notify("taskIncomplete", data));
     socket.on("attendanceCheckedIn", (data) => notify("attendanceCheckedIn", data));
     socket.on("attendanceCheckedOut", (data) => notify("attendanceCheckedOut", data));
+    socket.on("clientCallStarted", (data) => notify("clientCallStarted", data));
+    socket.on("clientCallEnded", (data) => notify("clientCallEnded", data));
+    socket.on("clientUpdated", (data) => notify("clientUpdated", data));
+    socket.on("clientReminder", (data) => notify("clientReminder", data));
+    socket.on("paymentReminder", (data) => notify("paymentReminder", data));
 
     return () => {
       listeners.delete(onEvent);

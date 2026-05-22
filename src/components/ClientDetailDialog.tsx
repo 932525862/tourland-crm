@@ -34,14 +34,22 @@ export function ClientDetailDialog({
   enableCallActions = false,
 }: Props) {
   const session = useSession();
+  const [localClient, setLocalClient] = useState<Client>(client);
+
+  useEffect(() => {
+    setLocalClient(client);
+  }, [client]);
+
   const [noteText, setNoteText] = useState("");
   const [moveStage, setMoveStage] = useState<ClientStage>(client.stage);
   const [reminderDate, setReminderDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [callNote, setCallNote] = useState("");
+  const [callReminder, setCallReminder] = useState("");
 
   // Sale state
-  const sale: SaleInfo = client.sale ?? { status: "none", payments: [] };
+  const sale: SaleInfo = localClient.sale ?? { status: "none", payments: [] };
   const totalPaid = sale.payments.reduce((s, p) => s + p.amount, 0);
   const remaining = sale.totalAmount ? Math.max(0, sale.totalAmount - totalPaid) : 0;
 
@@ -57,7 +65,7 @@ export function ClientDetailDialog({
     if (!noteText.trim()) return;
     setLoading(true);
     try {
-      await API.addNote(client.id, noteText.trim());
+      await API.addNote(localClient.id, noteText.trim());
       setNoteText("");
       toast.success("Izoh qo'shildi");
       onRefresh();
@@ -69,10 +77,10 @@ export function ClientDetailDialog({
   };
 
   const handleMoveStage = async () => {
-    if (moveStage === client.stage) return;
+    if (moveStage === localClient.stage) return;
     setLoading(true);
     try {
-      await API.updateClient(client.id, { stage: moveStage });
+      await API.updateClient(localClient.id, { stage: moveStage });
       toast.success(`"${STAGE_LABELS[moveStage]}" bosqichiga ko'chirildi`);
       onRefresh();
     } catch (err: any) {
@@ -90,7 +98,7 @@ export function ClientDetailDialog({
     }
     setLoading(true);
     try {
-      await API.setSale(client.id, {
+      await API.setSale(localClient.id, {
         status: "full",
         totalAmount: amt,
         paidAmount: amt
@@ -122,7 +130,7 @@ export function ClientDetailDialog({
     }
     setLoading(true);
     try {
-      await API.setSale(client.id, {
+      await API.setSale(localClient.id, {
         status: "partial",
         totalAmount: total,
         paidAmount: paid,
@@ -146,7 +154,7 @@ export function ClientDetailDialog({
     }
     setLoading(true);
     try {
-      await API.addPayment(client.id, amt);
+      await API.addPayment(localClient.id, amt);
       setExtraAmount("");
       toast.success("To'lov qo'shildi");
       onRefresh();
@@ -160,7 +168,7 @@ export function ClientDetailDialog({
   const handleCompletePayment = async () => {
     setLoading(true);
     try {
-      await API.setSale(client.id, { status: "full" });
+      await API.setSale(localClient.id, { status: "full" });
       toast.success("To'lov yakunlandi");
       onRefresh();
     } catch (err: any) {
@@ -173,7 +181,7 @@ export function ClientDetailDialog({
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await API.deleteClient(client.id);
+      await API.deleteClient(localClient.id);
       toast.success("Mijoz o'chirildi");
       onRefresh();
       onClose();
@@ -185,13 +193,73 @@ export function ClientDetailDialog({
     }
   };
 
+  const handleStartCall = async () => {
+    setLoading(true);
+    try {
+      await API.callStart(localClient.id);
+      toast.success("Mijoz sizga biriktirildi, qo'ng'iroq jarayonida");
+      
+      // Immediate UI update
+      setLocalClient(prev => ({
+        ...prev,
+        call: {
+          ...prev.call,
+          inCallByEmployeeId: viewerId,
+          inCallByName: viewerName,
+          callStartedAt: new Date().toISOString()
+        }
+      }));
+
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Xatolik yuz berdi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteCall = async (action: ClientStage) => {
+    setLoading(true);
+    try {
+      if (callNote.trim()) {
+        await API.addNote(localClient.id, callNote.trim());
+        setCallNote("");
+      }
+      const payload: any = { stage: action };
+      if (callReminder) {
+        payload.remindAt = new Date(callReminder).toISOString();
+        setCallReminder("");
+      }
+      
+      await API.updateClient(localClient.id, payload);
+      toast.success("Qo'ng'iroq yakunlandi");
+      
+      // Immediate UI update
+      setLocalClient(prev => ({
+        ...prev,
+        stage: action,
+        call: { ...prev.call, inCallByEmployeeId: undefined, inCallByName: undefined, callStartedAt: undefined }
+      }));
+
+      if (action === "sold") {
+        setShowPurchase(true);
+      }
+      
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Xatolik yuz berdi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-card rounded-2xl border border-border shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-card z-10">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-foreground truncate flex items-center gap-2">
-              {client.data?.["Ism familya"] || client.name || "Mijoz"}
+              {localClient.data?.["Ism familya"] || localClient.name || "Mijoz"}
               {sale.status === "partial" && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/15 text-destructive font-medium">
                   To'liq emas
@@ -203,7 +271,7 @@ export function ClientDetailDialog({
                 </span>
               )}
             </h2>
-            <p className="text-xs text-muted-foreground">Bo'lim: {client.formTitle || "—"}</p>
+            <p className="text-xs text-muted-foreground">Bo'lim: {localClient.formTitle || "—"}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
             <X className="w-4 h-4" />
@@ -217,13 +285,13 @@ export function ClientDetailDialog({
             <div className="bg-secondary/50 rounded-xl p-4 space-y-2">
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <span className="text-muted-foreground">Ism familya</span>
-                <span className="col-span-2 text-foreground font-medium">{client.name}</span>
+                <span className="col-span-2 text-foreground font-medium">{localClient.name}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <span className="text-muted-foreground">Tel raqam</span>
-                <span className="col-span-2 text-foreground font-medium">{client.phone}</span>
+                <span className="col-span-2 text-foreground font-medium">{localClient.phone}</span>
               </div>
-              {Object.entries(client.data || {}).map(([key, value]) => {
+              {Object.entries(localClient.data || {}).map(([key, value]) => {
                 if (key === "Ism familya" || key === "Tel raqam") return null;
                 return (
                   <div key={key} className="grid grid-cols-3 gap-2 text-sm">
@@ -235,157 +303,215 @@ export function ClientDetailDialog({
             </div>
           </section>
 
-          {/* Sale section */}
-          <section className="rounded-xl border border-border p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4" /> Sotov
-            </h3>
+          {/* Call section - show for ALL stages except Sold, unless a call is active */}
+          <section className="rounded-xl border border-border p-4 space-y-4">
+             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Phone className="w-4 h-4" /> Qo'ng'iroq
+             </h3>
 
-            {sale.status === "none" && !showPurchase && (
-              <button
-                onClick={() => setShowPurchase(true)}
-                disabled={session?.isActive === false}
-                className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Sotuvni rasmiylashtirish
-              </button>
-            )}
-
-            {sale.status === "none" && showPurchase && purchaseMode === "choose" && (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setPurchaseMode("full")}
-                  className="py-3 rounded-lg bg-success text-success-foreground font-medium"
+             {/* If no one is calling and it's NOT sold, show the start button */}
+             {!localClient.call?.inCallByEmployeeId && localClient.stage !== "sold" && (
+                <button 
+                   onClick={handleStartCall}
+                   disabled={loading || session?.isActive === false}
+                   className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-black shadow-lg hover:shadow-glow transition-all"
                 >
-                  To'liq to'lov
+                   Qo'ng'iroq qilinyapti
                 </button>
-                <button
-                  onClick={() => setPurchaseMode("partial")}
-                  className="py-3 rounded-lg bg-warning text-warning-foreground font-medium"
-                >
-                  Bo'lib to'lash
-                </button>
-                <button
-                  onClick={() => { setShowPurchase(false); setPurchaseMode("choose"); }}
-                  className="col-span-2 py-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Bekor qilish
-                </button>
-              </div>
-            )}
+             )}
+             
+             {localClient.call?.inCallByEmployeeId && localClient.call.inCallByEmployeeId !== viewerId && (
+                 <div className="bg-warning/10 text-warning-foreground p-3 rounded-lg text-sm text-center">
+                    Ushbu mijoz bilan xozirda <strong>{localClient.call.inCallByName || "boshqa xodim"}</strong> gaplashmoqda.
+                 </div>
+             )}
 
-            {sale.status === "none" && purchaseMode === "full" && (
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">To'lov summasi</label>
-                <input
-                  type="number"
-                  value={fullAmount}
-                  onChange={(e) => setFullAmount(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background"
-                />
-                <div className="flex gap-2">
-                  <button onClick={handleFullPurchase} disabled={loading} className="flex-1 py-2 rounded-lg bg-success text-white text-sm font-medium">
-                    Tasdiqlash
-                  </button>
-                  <button onClick={() => setPurchaseMode("choose")} className="px-3 py-2 rounded-lg border border-border text-sm">
-                    Orqaga
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {sale.status === "none" && purchaseMode === "partial" && (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-muted-foreground">To'liq summa</label>
-                    <input type="number" value={partialTotal} onChange={(e) => setPartialTotal(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">To'langan summa</label>
-                    <input type="number" value={partialPaid} onChange={(e) => setPartialPaid(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Keyingi to'lov sanasi</label>
-                  <input type="datetime-local" value={partialNextDate} onChange={(e) => setPartialNextDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handlePartialPurchase} disabled={loading} className="flex-1 py-2 rounded-lg bg-warning text-white text-sm font-medium">
-                    Tasdiqlash
-                  </button>
-                  <button onClick={() => setPurchaseMode("choose")} className="px-3 py-2 rounded-lg border border-border text-sm">
-                    Orqaga
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {sale.status !== "none" && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2 text-sm bg-secondary/40 rounded-lg p-3 text-center">
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Jami</div>
-                    <div className="font-bold text-foreground">{sale.totalAmount?.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">To'langan</div>
-                    <div className="font-bold text-success">{totalPaid.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Qoldiq</div>
-                    <div className="font-bold text-destructive">{remaining.toLocaleString()}</div>
-                  </div>
-                </div>
-
-                {sale.status === "partial" && sale.nextPaymentAt && (
-                  <div className="flex items-center gap-2 text-xs bg-warning/10 text-warning-foreground rounded-lg p-2 border border-warning/20">
-                    <Bell className="w-3.5 h-3.5" /> Keyingi to'lov: {new Date(sale.nextPaymentAt).toLocaleString("uz-UZ")}
-                  </div>
-                )}
-
-                <div>
-                  <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">To'lovlar tarixi</h4>
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                    {sale.payments.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between text-xs bg-secondary/30 rounded-lg p-2">
-                        <span className="font-bold text-foreground">{p.amount.toLocaleString()}</span>
-                        <span className="text-muted-foreground">{new Date(p.createdAt).toLocaleDateString("uz-UZ")}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {sale.status === "partial" && (
-                  <div className="space-y-2 border-t border-border pt-3">
-                    <label className="text-[11px] font-bold text-muted-foreground uppercase">Yangi to'lov</label>
-                    {session?.isActive !== false ? (
-                      <>
-                        <div className="flex gap-2">
-                          <input type="number" value={extraAmount} onChange={(e) => setExtraAmount(e.target.value)} placeholder="0" className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                          <button onClick={handleAddPayment} disabled={loading} className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium">
-                            <Wallet className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <button onClick={handleCompletePayment} disabled={loading} className="w-full py-2 rounded-lg bg-success text-white text-sm font-medium">
-                          To'liq to'landi
-                        </button>
-                      </>
-                    ) : (
-                      <p className="text-[10px] text-destructive font-bold italic">To'lovni qo'shish uchun hisob faol bo'lishi kerak</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+             {localClient.call?.inCallByEmployeeId === viewerId && (
+                 <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Siz hozir bu mijoz bilan bog'lanmoqdasiz. Yakunlang:</p>
+                    <textarea 
+                        value={callNote}
+                        onChange={(e) => setCallNote(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[80px]"
+                        placeholder="Ertaga o'ylab ko'raman dedi..."
+                    />
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground font-medium">Eslatma vaqti (ko'tarmagan bo'lsa)</label>
+                      <input 
+                         type="datetime-local" 
+                         value={callReminder}
+                         onChange={(e) => setCallReminder(e.target.value)}
+                         className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleCompleteCall("talked")} className="flex-[2] py-2.5 bg-[#0F172A] text-white rounded-lg text-sm font-medium hover:opacity-90">Gaplashildi</button>
+                      <button onClick={() => handleCompleteCall("no_answer")} className="flex-[1.5] py-2.5 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-secondary/80">Ko'tarmadi</button>
+                      <button onClick={() => handleCompleteCall("sold")} className="flex-[1] py-2.5 bg-success text-success-foreground rounded-lg text-sm font-medium hover:bg-success/90">Sotildi</button>
+                    </div>
+                 </div>
+             )}
           </section>
+
+          {/* Sale section - only show if sold or already has sale */}
+          {(localClient.stage === "sold" || sale.status !== "none") && (
+            <section className="rounded-xl border border-border p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4" /> Sotov
+              </h3>
+
+              {sale.status === "none" && !showPurchase && (
+                <button
+                  onClick={() => setShowPurchase(true)}
+                  disabled={session?.isActive === false}
+                  className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Sotuvni rasmiylashtirish
+                </button>
+              )}
+
+              {sale.status === "none" && showPurchase && purchaseMode === "choose" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPurchaseMode("full")}
+                    className="py-3 rounded-lg bg-success text-success-foreground font-medium"
+                  >
+                    To'liq to'lov
+                  </button>
+                  <button
+                    onClick={() => setPurchaseMode("partial")}
+                    className="py-3 rounded-lg bg-warning text-warning-foreground font-medium"
+                  >
+                    Bo'lib to'lash
+                  </button>
+                  <button
+                    onClick={() => { setShowPurchase(false); setPurchaseMode("choose"); }}
+                    className="col-span-2 py-2 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Bekor qilish
+                  </button>
+                </div>
+              )}
+
+              {sale.status === "none" && purchaseMode === "full" && (
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">To'lov summasi</label>
+                  <input
+                    type="number"
+                    value={fullAmount}
+                    onChange={(e) => setFullAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={handleFullPurchase} disabled={loading} className="flex-1 py-2 rounded-lg bg-success text-white text-sm font-medium">
+                      Tasdiqlash
+                    </button>
+                    <button onClick={() => setPurchaseMode("choose")} className="px-3 py-2 rounded-lg border border-border text-sm">
+                      Orqaga
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {sale.status === "none" && purchaseMode === "partial" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">To'liq summa</label>
+                      <input type="number" value={partialTotal} onChange={(e) => setPartialTotal(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">To'langan summa</label>
+                      <input type="number" value={partialPaid} onChange={(e) => setPartialPaid(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Keyingi to'lov sanasi</label>
+                    <input type="datetime-local" value={partialNextDate} onChange={(e) => setPartialNextDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handlePartialPurchase} disabled={loading} className="flex-1 py-2 rounded-lg bg-warning text-white text-sm font-medium">
+                      Tasdiqlash
+                    </button>
+                    <button onClick={() => setPurchaseMode("choose")} className="px-3 py-2 rounded-lg border border-border text-sm">
+                      Orqaga
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {sale.status !== "none" && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-sm bg-secondary/40 rounded-lg p-3 text-center">
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase">Jami</div>
+                      <div className="font-bold text-foreground">{sale.totalAmount?.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase">To'langan</div>
+                      <div className="font-bold text-success">{totalPaid.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase">Qoldiq</div>
+                      <div className="font-bold text-destructive">{(remaining > 0 ? remaining : 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {sale.status === "partial" && remaining > 0 && sale.nextPaymentAt && (
+                    <div className="flex items-center justify-between text-xs bg-warning/10 text-warning-foreground rounded-lg p-3 border border-warning/20">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-3.5 h-3.5" /> 
+                        <span>To'lov sanasi: {new Date(sale.nextPaymentAt).toLocaleDateString("uz-UZ")}</span>
+                      </div>
+                      <div className="font-bold animate-pulse">
+                         {Math.max(0, Math.ceil((new Date(sale.nextPaymentAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} kun qoldi
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">To'lovlar tarixi</h4>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                      {sale.payments.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between text-xs bg-secondary/30 rounded-lg p-2">
+                          <span className="font-bold text-foreground">{p.amount.toLocaleString()}</span>
+                          <span className="text-muted-foreground">{new Date(p.createdAt).toLocaleDateString("uz-UZ")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {sale.status === "partial" && (
+                    <div className="space-y-2 border-t border-border pt-3">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Yangi to'lov</label>
+                      {session?.isActive !== false ? (
+                        <>
+                          <div className="flex gap-2">
+                            <input type="number" value={extraAmount} onChange={(e) => setExtraAmount(e.target.value)} placeholder="0" className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                            <button onClick={handleAddPayment} disabled={loading} className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium">
+                              <Wallet className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <button onClick={handleCompletePayment} disabled={loading} className="w-full py-2 rounded-lg bg-success text-white text-sm font-medium">
+                            To'liq to'landi
+                          </button>
+                        </>
+                      ) : (
+                        <p className="text-[10px] text-destructive font-bold italic">To'lovni qo'shish uchun hisob faol bo'lishi kerak</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Notes */}
           <section>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" /> Izohlar ({client.notes?.length || 0})
+                <MessageSquare className="w-4 h-4" /> Izohlar ({localClient.notes?.length || 0})
               </h3>
             </div>
             <div className="flex gap-2 mb-3">
@@ -405,10 +531,10 @@ export function ClientDetailDialog({
               </button>
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {(!client.notes || client.notes.length === 0) ? (
+              {(!localClient.notes || localClient.notes.length === 0) ? (
                 <p className="text-xs text-muted-foreground italic text-center py-4">Izohlar yo'q</p>
               ) : (
-                [...client.notes].reverse().map((n) => (
+                [...localClient.notes].reverse().map((n) => (
                   <div key={n.id} className="rounded-xl bg-secondary/30 border border-border/50 p-3">
                     <p className="text-sm text-foreground leading-relaxed">{n.text}</p>
                     <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
@@ -418,32 +544,6 @@ export function ClientDetailDialog({
                   </div>
                 ))
               )}
-            </div>
-          </section>
-
-          {/* Status management */}
-          <section className="border-t border-border pt-5">
-            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <ArrowRightLeft className="w-4 h-4" /> Holatni o'zgartirish
-            </h3>
-            <div className="flex gap-2">
-              <select
-                value={moveStage}
-                disabled={session?.isActive === false}
-                onChange={(e) => setMoveStage(e.target.value as ClientStage)}
-                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-              >
-                {(["new", "no_answer", "talked", "sold"] as ClientStage[]).map((st) => (
-                  <option key={st} value={st}>{STAGE_LABELS[st]}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleMoveStage}
-                disabled={loading || moveStage === client.stage || session?.isActive === false}
-                className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 disabled:opacity-40"
-              >
-                O'zgartirish
-              </button>
             </div>
           </section>
 

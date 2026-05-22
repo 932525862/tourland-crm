@@ -59,12 +59,20 @@ export function playNotificationSound() {
 export function showBrowserNotification(title: string, options?: NotificationOptions) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   
+  const fire = () => {
+    const n = new Notification(title, options);
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+  };
+
   if (Notification.permission === "granted") {
-    new Notification(title, options);
+    fire();
   } else if (Notification.permission !== "denied") {
     Notification.requestPermission().then(permission => {
       if (permission === "granted") {
-        new Notification(title, options);
+        fire();
       }
     });
   }

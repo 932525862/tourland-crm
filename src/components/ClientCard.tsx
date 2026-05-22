@@ -1,4 +1,4 @@
-import { User as UserIcon, Phone, Bell, MessageCircle } from "lucide-react";
+import { User as UserIcon, Phone, Bell, MessageCircle, Lock } from "lucide-react";
 import type { Client } from "@/lib/types";
 
 interface Props {
@@ -20,6 +20,11 @@ export function ClientCard({ client, onClick }: Props) {
           <UserIcon className="w-7 h-7" />
         </div>
         <div className="flex flex-col items-end gap-1.5">
+          {client.call?.inCallByEmployeeId && (
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-bold uppercase tracking-widest border border-destructive/20 flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Band
+            </span>
+          )}
           {sale?.status === "full" && (
             <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-success/15 text-success font-black uppercase tracking-widest border border-success/20">Sotildi</span>
           )}

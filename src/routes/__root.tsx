@@ -81,8 +81,7 @@ function RootComponent() {
     if (token) {
       API.me()
         .then(({ user }) => {
-          const sessionData: any = { role: user.role, name: user.name, login: user.login, isActive: user.isActive };
-          if (user.role === "employee") sessionData.employeeId = user.sub;
+          const sessionData: any = { id: user.sub, role: user.role, name: user.name, login: user.login, isActive: user.isActive };
           saveSession(sessionData);
 
           if (user.role === "director") {

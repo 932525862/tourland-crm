@@ -38,7 +38,7 @@ function LoginPage() {
         throw new Error("Ruxsat berilmagan: Tanlangan rol mos kelmadi");
       }
       
-      saveSession({ role: user.role, name: user.name, login: user.login });
+      saveSession({ id: user.sub, role: user.role, name: user.name, login: user.login });
       toast.success(`Xush kelibsiz, ${user.name}`);
       
       if (user.role === "director") navigate({ to: "/director" });

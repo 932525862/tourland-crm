@@ -4,7 +4,7 @@ import { useAppState } from "@/lib/store";
 import { toast } from "sonner";
 import type { Employee } from "@/lib/types";
 import { API } from "@/lib/api/client";
-import { UserPlus, Pencil, X, Phone, User as UserIcon, Check, Trash2 } from "lucide-react";
+import { UserPlus, Pencil, X, Phone, User as UserIcon, Check } from "lucide-react";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
 export const Route = createFileRoute("/director/employees")({
@@ -16,7 +16,6 @@ function EmployeesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [confirmingStatus, setConfirmingStatus] = useState<Employee | null>(null);
-  const [confirmingDelete, setConfirmingDelete] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchEmployees = async () => {
@@ -44,22 +43,6 @@ function EmployeesPage() {
       toast.success(`Hodim ${action} qilindi`);
       await fetchEmployees();
       setConfirmingStatus(null);
-    } catch (err) {
-      toast.error("Xatolik yuz berdi");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteEmployee = async () => {
-    if (!confirmingDelete) return;
-    setLoading(true);
-    try {
-      // Assuming API has delete method, if not I should check
-      // For now let's assume we can deactivate them at least
-      // If there is no delete endpoint, we just show error
-      toast.error("O'chirish funksiyasi vaqtincha faol emas");
-      setConfirmingDelete(null);
     } catch (err) {
       toast.error("Xatolik yuz berdi");
     } finally {
@@ -126,23 +109,47 @@ function EmployeesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 w-full lg:w-auto lg:ml-auto">
-                <button
-                  onClick={() => { setEditing(emp); setShowForm(true); }}
-                  className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border border-border bg-card text-foreground hover:bg-secondary hover:border-primary/30 transition-all text-sm font-bold shadow-sm"
-                >
-                  <Pencil className="w-4 h-4 text-primary" /> Tahrir
-                </button>
-                <button
-                  onClick={() => setConfirmingStatus(emp)}
-                  className={`flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl transition-all text-sm font-bold shadow-sm ${emp.isActive ? 'bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/10' : 'bg-success/10 text-success hover:bg-success hover:text-white border border-success/10'}`}
-                >
-                  {emp.isActive ? (
-                    <><X className="w-4 h-4" /> Deaktivatsiya</>
-                  ) : (
-                    <><Check className="w-4 h-4" /> Faollashtirish</>
-                  )}
-                </button>
+              <div className="flex items-center gap-4 w-full lg:w-auto lg:ml-auto">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card shadow-sm h-[46px]">
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Hisob:</span>
+                  <button
+                    onClick={async () => {
+                      const newStatus = !emp.isActive;
+                      try {
+                        if (newStatus) await API.activateUser(emp.id);
+                        else await API.deactivateUser(emp.id);
+                        await fetchEmployees();
+                        toast.success(newStatus ? "Hodim faollashtirildi" : "Hodim bloklandi");
+                      } catch (err) {
+                        toast.error("Xatolik yuz berdi");
+                      }
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${emp.isActive ? 'bg-success' : 'bg-destructive'}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emp.isActive ? 'translate-x-6' : 'translate-x-1'}`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 flex-1 lg:flex-initial">
+                  <button
+                    onClick={() => { setEditing(emp); setShowForm(true); }}
+                    className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border border-border bg-card text-foreground hover:bg-secondary hover:border-primary/30 transition-all text-sm font-bold shadow-sm"
+                  >
+                    <Pencil className="w-4 h-4 text-primary" /> Tahrir
+                  </button>
+                  <button
+                    onClick={() => setConfirmingStatus(emp)}
+                    className={`flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl transition-all text-sm font-bold shadow-sm ${emp.isActive ? 'bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/10' : 'bg-success/10 text-success hover:bg-success hover:text-white border border-success/10'}`}
+                  >
+                    {emp.isActive ? (
+                      <><X className="w-4 h-4" /> Deaktivatsiya</>
+                    ) : (
+                      <><Check className="w-4 h-4" /> Faollashtirish</>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
