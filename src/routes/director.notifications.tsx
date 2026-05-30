@@ -7,7 +7,7 @@ export const Route = createFileRoute("/director/notifications")({
 });
 
 function DirectorNotifications() {
-  const { notifications, markRead, markAllRead, unreadCount } = useNotifications();
+  const { notifications, markRead, markAllRead, unreadCount, fetchNotifications } = useNotifications();
 
   return (
     <NotificationList
@@ -15,6 +15,7 @@ function DirectorNotifications() {
       onMarkRead={markRead}
       onMarkAllRead={markAllRead}
       unreadCount={unreadCount}
+      onRefresh={fetchNotifications}
     />
   );
 }

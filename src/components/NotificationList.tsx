@@ -1,10 +1,10 @@
-import { 
-  Bell, 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
-  ClipboardList, 
-  User, 
+import {
+  Bell,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  ClipboardList,
+  User,
   Clock,
   Check,
   ChevronRight,
@@ -21,7 +21,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useSession } from "@/lib/store";
+import { ReminderModal } from "@/components/ReminderModal";
+import { API } from "@/lib/api/client";
+import { toast } from "sonner";
+import { PhoneOff } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -41,6 +46,7 @@ interface NotificationListProps {
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   unreadCount: number;
+  onRefresh: (limit?: number) => void;
 }
 
 const typeConfig: Record<string, { icon: any; color: string; label: string; bg: string }> = {
@@ -62,9 +68,13 @@ export function NotificationList({
   onMarkRead,
   onMarkAllRead,
   unreadCount,
+  onRefresh,
 }: NotificationListProps) {
   const navigate = useNavigate();
   const session = useSession();
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleItemClick = (n: Notification) => {
     if (!n.isRead) {
@@ -72,7 +82,7 @@ export function NotificationList({
     }
 
     const role = session?.role || "employee";
-    
+
     if (n.data?.taskId) {
       navigate({ to: `/${role}/tasks` as any });
     } else if (n.data?.clientId) {
@@ -110,7 +120,7 @@ export function NotificationList({
             <div>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">Bildirishnomalar</h1>
               <p className="text-sm font-medium text-muted-foreground/80">
-                {unreadCount > 0 
+                {unreadCount > 0
                   ? `Sizda ${unreadCount} ta yangi bildirishnoma bor`
                   : "Hamma xabarlar o'qilgan"}
               </p>
@@ -144,14 +154,14 @@ export function NotificationList({
                 {notifications.map((n) => {
                   const config = typeConfig[n.type] || typeConfig.default;
                   const Icon = config.icon;
-                  
+
                   return (
                     <div
                       key={n.id}
                       className={cn(
                         "group relative flex items-start gap-5 p-5 md:p-6 rounded-[1.5rem] transition-all border cursor-pointer",
-                        !n.isRead 
-                          ? "bg-white dark:bg-zinc-900 border-primary/30 shadow-xl shadow-primary/5 ring-1 ring-primary/10" 
+                        !n.isRead
+                          ? "bg-white dark:bg-zinc-900 border-primary/30 shadow-xl shadow-primary/5 ring-1 ring-primary/10"
                           : "bg-white/40 dark:bg-zinc-900/40 border-border/40 hover:border-primary/20 hover:bg-white dark:hover:bg-zinc-900 shadow-sm"
                       )}
                       onClick={() => handleItemClick(n)}
@@ -171,7 +181,7 @@ export function NotificationList({
                           )}>
                             {config.label}
                           </span>
-                          
+
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-muted-foreground font-semibold bg-secondary/60 px-2.5 py-1 rounded-lg">
@@ -195,9 +205,25 @@ export function NotificationList({
                         </div>
 
                         {n.data && (
-                          <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-primary/60 group-hover:text-primary transition-colors">
-                            <ExternalLink className="w-3 h-3" />
-                            Batafsil ko'rish
+                          <div className="mt-3 flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary/60 group-hover:text-primary transition-colors">
+                              <ExternalLink className="w-3 h-3" />
+                              Batafsil ko'rish
+                            </div>
+                            
+                            {n.data.clientId && (n.type === 'client_reminder' || n.type === 'client_payment') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedClientId(n.data!.clientId!);
+                                  setShowReminderModal(true);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 text-amber-600 text-[10px] font-bold hover:bg-amber-500 hover:text-white transition-all active:scale-95"
+                              >
+                                <PhoneOff className="w-3 h-3" />
+                                Ko'tarmadi
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -212,11 +238,57 @@ export function NotificationList({
                     </div>
                   );
                 })}
+                
+                {notifications.length >= 50 && (
+                  <div className="pt-4 flex justify-center">
+                    <button
+                      onClick={() => onRefresh(1000)}
+                      className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl bg-secondary text-primary font-bold text-sm hover:bg-primary/10 transition-all active:scale-95"
+                    >
+                      <BellRing className="w-4 h-4" />
+                      Hammasini ko'rish
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </ScrollArea>
         </Card>
       </div>
+
+      {showReminderModal && (
+        <ReminderModal
+          isOpen={showReminderModal}
+          onClose={() => {
+            setShowReminderModal(false);
+            setSelectedClientId(null);
+          }}
+          onConfirm={async (time) => {
+            if (!selectedClientId) return;
+            setLoading(true);
+            try {
+              await API.addNote(selectedClientId, "Bildirishnomalar orqali 'Ko'tarmadi' deb belgilandi");
+              await API.updateClient(selectedClientId, {
+                stage: "no_answer",
+                remindAt: new Date(time).toISOString()
+              });
+              toast.success("Eslatma saqlandi");
+              setShowReminderModal(false);
+              setSelectedClientId(null);
+              // Mark notification as read if not already
+              const n = notifications.find(notif => notif.data?.clientId === selectedClientId);
+              if (n && !n.isRead) {
+                onMarkRead(n.id);
+              }
+            } catch (err: any) {
+              toast.error(err.message || "Xatolik yuz berdi");
+            } finally {
+              setLoading(false);
+            }
+          }}
+          loading={loading}
+        />
+      )}
     </TooltipProvider>
   );
 }

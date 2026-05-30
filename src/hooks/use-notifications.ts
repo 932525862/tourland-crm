@@ -46,11 +46,11 @@ export function useNotifications() {
     };
   }, []);
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (limit?: number) => {
     globalIsLoading = true;
     notifyListeners();
     try {
-      const data = await API.notifications();
+      const data = await API.notifications(limit);
       globalNotifications = data;
       globalUnreadCount = data.filter((n) => !n.isRead).length;
     } catch (err) {

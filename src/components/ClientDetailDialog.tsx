@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { API } from "@/lib/api/client";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { formatUzDateTime, formatUzDate, getTashkentDayjs } from "@/lib/date-utils";
+import { TelegramUserSingleSelect } from "@/components/TelegramUserSingleSelect";
+import { TelegramMessageModal } from "@/components/TelegramMessageModal";
+import { ReminderModal } from "@/components/ReminderModal";
 
 const STAGE_LABELS: Record<ClientStage, string> = {
   new: "Yangi",
@@ -58,6 +61,9 @@ export function ClientDetailDialog({
   const [callReminder, setCallReminder] = useState("");
   const [showFullPaymentConfirm, setShowFullPaymentConfirm] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [singleTelegramId, setSingleTelegramId] = useState<string | null>(null);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
   // Sale state
   const sale: SaleInfo = localClient.sale ?? { status: "none", payments: [] };
@@ -258,6 +264,11 @@ export function ClientDetailDialog({
   };
 
   const handleCompleteCall = async (action: ClientStage) => {
+    if (action === "no_answer" && !callReminder && !showReminderModal) {
+      setShowReminderModal(true);
+      return;
+    }
+
     setLoading(true);
     try {
       if (callNote.trim()) {
@@ -281,6 +292,7 @@ export function ClientDetailDialog({
       }));
 
       onRefresh();
+      setShowReminderModal(false);
     } catch (err: any) {
       toast.error(err.message || "Xatolik yuz berdi");
     } finally {
@@ -362,6 +374,18 @@ export function ClientDetailDialog({
         </div>
 
         <div className="p-5 space-y-6">
+          {/* Telegram Alerts */}
+          <div className="flex justify-end">
+            <TelegramUserSingleSelect 
+              onSelected={(id) => {
+                if (id) {
+                  setSingleTelegramId(id);
+                  setShowTelegramModal(true);
+                }
+              }} 
+            />
+          </div>
+
           {/* Form data / Details */}
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-2">Mijoz ma'lumotlari</h3>
@@ -425,15 +449,6 @@ export function ClientDetailDialog({
                   className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[80px]"
                   placeholder="Ertaga o'ylab ko'raman dedi..."
                 />
-                <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground font-medium">Eslatma vaqti (ko'tarmagan bo'lsa)</label>
-                  <input
-                    type="datetime-local"
-                    value={callReminder}
-                    onChange={(e) => setCallReminder(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                  />
-                </div>
                 <div className="flex gap-2">
                   <button onClick={() => handleCompleteCall("talked")} className="flex-[2] py-2.5 bg-secondary text-foreground rounded-lg text-sm font-medium transition-colors hover:bg-[#0F172A] hover:text-white">Gaplashildi</button>
                   <button onClick={() => handleCompleteCall("no_answer")} className="flex-[1.5] py-2.5 bg-secondary text-foreground rounded-lg text-sm font-medium transition-colors hover:bg-[#0F172A] hover:text-white">Ko'tarmadi</button>
@@ -737,6 +752,32 @@ export function ClientDetailDialog({
         tone="destructive"
         loading={loading}
       />
+
+      {showTelegramModal && (
+        <TelegramMessageModal
+          selectedTelegramIds={singleTelegramId ? [singleTelegramId] : []}
+          onClose={() => {
+            setShowTelegramModal(false);
+            setSingleTelegramId(null);
+          }}
+          onSuccess={() => {
+            setShowTelegramModal(false);
+            setSingleTelegramId(null);
+          }}
+        />
+      )}
+
+      {showReminderModal && (
+        <ReminderModal
+          isOpen={showReminderModal}
+          onClose={() => setShowReminderModal(false)}
+          onConfirm={(time) => {
+            setCallReminder(time);
+            handleCompleteCall("no_answer");
+          }}
+          loading={loading}
+        />
+      )}
     </div>
   );
 }

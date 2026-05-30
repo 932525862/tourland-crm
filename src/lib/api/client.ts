@@ -421,7 +421,7 @@ export const API = {
   tgSend: (chatId: number, text: string) => Promise.resolve(),
 
   // notifications
-  notifications: () => api<any[]>("/notifications"),
+  notifications: (limit?: number) => api<any[]>(`/notifications${limit ? `?limit=${limit}` : ""}`),
   markNotificationRead: (id: string) => api(`/notifications/${id}/read`, { method: "PATCH" }),
   markAllNotificationsRead: () => api("/notifications/read-all", { method: "POST" }),
   subscribePush: (subscription: any) => api("/notifications/push-subscribe", { method: "POST", json: subscription }),

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/employee/notifications")({
 });
 
 function EmployeeNotifications() {
-  const { notifications, markRead, markAllRead, unreadCount } = useNotifications();
+  const { notifications, markRead, markAllRead, unreadCount, fetchNotifications } = useNotifications();
 
   return (
     <NotificationList
@@ -15,6 +15,7 @@ function EmployeeNotifications() {
       onMarkRead={markRead}
       onMarkAllRead={markAllRead}
       unreadCount={unreadCount}
+      onRefresh={fetchNotifications}
     />
   );
 }
