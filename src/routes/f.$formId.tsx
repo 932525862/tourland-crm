@@ -5,11 +5,14 @@ import { toast } from "sonner";
 import { API } from "@/lib/api/client";
 import { formatUzbekPhone } from "@/lib/utils";
 import type { FormTemplate } from "@/lib/types";
-import logo from "../logo.png"
+import logo from "../logo.png";
+import bgimg from "../bg.jpg";
 export const Route = createFileRoute("/f/$formId")({
   head: () => ({ meta: [{ title: "Forma" }] }),
   component: PublicForm,
 });
+
+
 
 function PublicForm() {
   const { formId } = Route.useParams();
@@ -87,8 +90,13 @@ function PublicForm() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary/30 py-10 px-4">
-      <div className="max-w-xl mx-auto">
+    <div className="min-h-screen relative py-10 px-4 overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center filter blur-2xl opacity-70"
+        style={{ backgroundImage: `url(${bgimg})` }}
+      />
+      <div className="absolute inset-0 bg-black/30" />
+      <div className="relative max-w-xl mx-auto">
         <div className="text-center mb-6">
           <div className="inline-flex w-20 h-20 rounded-xl items-center justify-center text-primary-foreground shadow-md">
             {/* <Briefcase className="w-6 h-6" /> */}
