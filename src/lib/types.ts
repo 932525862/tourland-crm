@@ -95,7 +95,7 @@ export interface Client {
   notes: ClientNote[];
   call: ClientCallStatus;
   sale?: SaleInfo;
-  telegramChatId?: number;
+  telegramId?: string;
   telegramUsername?: string;
   createdAt: string;
   description?: string;

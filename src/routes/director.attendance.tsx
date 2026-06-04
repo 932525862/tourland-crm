@@ -487,15 +487,6 @@ function DirectorAttendance() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={handleBackfill}
-            disabled={loading || isBackfilling}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-warning/30 bg-warning/5 text-warning hover:bg-warning/10 transition-all disabled:opacity-50 text-sm font-bold"
-            title="O'tgan kunlar davomatini tiklash"
-          >
-            <RefreshCw className={`w-4 h-4 ${isBackfilling ? "animate-spin" : ""}`} />
-            Gaplarni to'ldirish
-          </button>
-          <button
             onClick={fetchAttendance}
             disabled={loading}
             className="p-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/30 transition-all disabled:opacity-50"

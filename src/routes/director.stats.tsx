@@ -13,6 +13,7 @@ export const Route = createFileRoute("/director/stats")({
 function DirectorStats() {
   const { state, update } = useAppState();
   const [employeeFilter, setEmployeeFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>(getTashkentDayjs().format("YYYY-MM"));
   const [salesPage, setSalesPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +36,12 @@ function DirectorStats() {
   }, []);
 
   const stats = useMemo(() => {
-    const clients = state.clients;
+    const clients = state.clients.filter(c => {
+      const dateStr = c.sale?.completedAt || c.sale?.soldAt || c.createdAt;
+      if (!dateStr) return false;
+      return getTashkentDayjs(dateStr).format("YYYY-MM") === monthFilter;
+    });
+
     const filteredBaseClients = employeeFilter === "all" 
       ? clients 
       : clients.filter(c => c.sale?.completedByName === employeeFilter || c.call?.inCallByName === employeeFilter);
@@ -139,7 +145,7 @@ function DirectorStats() {
       byCategory,
       sales,
     };
-  }, [state, employeeFilter]);
+  }, [state, employeeFilter, monthFilter]);
 
   const salesPageSize = 10;
   const salesPageCount = Math.max(1, Math.ceil(stats.sales.length / salesPageSize));
@@ -295,7 +301,15 @@ function DirectorStats() {
                <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">{employeeFilter}</span>
             )}
           </div>
-          <Calendar className="w-5 h-5 text-primary" />
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-primary" />
+            <input
+              type="month"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="bg-card border border-border rounded-xl px-3 py-1.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+            />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

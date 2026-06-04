@@ -225,7 +225,7 @@ export function NotificationList({
                                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 text-amber-600 text-[10px] font-bold hover:bg-amber-500 hover:text-white transition-all active:scale-95"
                               >
                                 <PhoneOff className="w-3 h-3" />
-                                Ko'tarmadi
+                                Qayta eslatma
                               </button>
                             )}
                           </div>
@@ -281,12 +281,9 @@ export function NotificationList({
             if (!selectedClientId) return;
             setLoading(true);
             try {
-              await API.addNote(selectedClientId, "Bildirishnomalar orqali 'Ko'tarmadi' deb belgilandi");
-              await API.updateClient(selectedClientId, {
-                stage: "no_answer",
-                remindAt: new Date(time).toISOString()
-              });
-              toast.success("Eslatma saqlandi");
+              await API.addNote(selectedClientId, "Qayta eslatma (ogohlantirish) yuborildi");
+              await API.warnClient(selectedClientId, new Date(time).toISOString());
+              toast.success("Ogohlantirish yuborildi");
               setShowReminderModal(false);
               setSelectedClientId(null);
               // Mark notification as read if not already

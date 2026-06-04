@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { useSession } from "@/lib/store";
-import { BarChart3, Users, ShoppingCart, Wallet, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { BarChart3, Users, ShoppingCart, Wallet, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, Filter } from "lucide-react";
 import { API } from "@/lib/api/client";
 import { toast } from "sonner";
 import { getTashkentDayjs } from "@/lib/date-utils";
@@ -15,6 +15,8 @@ function EmployeeStats() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{ clients: any[]; categories: any[] }>({ clients: [], categories: [] });
   const [salesPage, setSalesPage] = useState(1);
+  const [salesFilter, setSalesFilter] = useState<"all" | "full" | "partial">("all");
+  const [monthFilter, setMonthFilter] = useState<string>(getTashkentDayjs().format("YYYY-MM"));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,8 +37,14 @@ function EmployeeStats() {
 
   const stats = useMemo(() => {
     const myName = session?.name || "";
-    // Filter clients where this employee is the seller
-    const myClients = data.clients.filter((c: any) => c.sale?.completedByName === myName || c.call?.inCallByName === myName);
+    const myClients = data.clients.filter((c: any) => {
+      const isSeller = c.sale?.completedByName === myName || c.call?.inCallByName === myName;
+      if (!isSeller) return false;
+      
+      const dateStr = c.sale?.completedAt || c.sale?.soldAt || c.createdAt;
+      if (!dateStr) return false;
+      return getTashkentDayjs(dateStr).format("YYYY-MM") === monthFilter;
+    });
     
     const totalClientsCount = myClients.length;
     
@@ -105,11 +113,12 @@ function EmployeeStats() {
       byCategory,
       salesList,
     };
-  }, [data, session?.name]);
+  }, [data, session?.name, monthFilter]);
 
+  const filteredSalesList = salesFilter === "all" ? stats.salesList : stats.salesList.filter((s: any) => s.status === salesFilter);
   const salesPageSize = 10;
-  const salesPageCount = Math.max(1, Math.ceil(stats.salesList.length / salesPageSize));
-  const salesPageItems = stats.salesList.slice((salesPage - 1) * salesPageSize, salesPage * salesPageSize);
+  const salesPageCount = Math.max(1, Math.ceil(filteredSalesList.length / salesPageSize));
+  const salesPageItems = filteredSalesList.slice((salesPage - 1) * salesPageSize, salesPage * salesPageSize);
 
   const fmt = (n: number) => n.toLocaleString("uz-UZ") + " so'm";
 
@@ -189,9 +198,29 @@ function EmployeeStats() {
 
         {/* Recent sales */}
         <section className="bg-card border border-border rounded-[32px] overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-border bg-secondary/10 flex items-center justify-between">
+            <div className="p-6 border-b border-border bg-secondary/10 flex items-center justify-between gap-4 flex-wrap">
                 <h2 className="text-lg font-bold text-foreground">Oxirgi sotuvlarim</h2>
-                <Calendar className="w-5 h-5 text-primary" />
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 mr-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <input
+                      type="month"
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      className="bg-card border border-border rounded-xl px-2 py-1 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    />
+                  </div>
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <select
+                    value={salesFilter}
+                    onChange={(e) => { setSalesFilter(e.target.value as any); setSalesPage(1); }}
+                    className="px-3 py-1.5 rounded-xl border border-border bg-card text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+                  >
+                    <option value="all">Barchasi</option>
+                    <option value="full">To'liq</option>
+                    <option value="partial">Nasiya</option>
+                  </select>
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -220,9 +249,11 @@ function EmployeeStats() {
                                 </td>
                             </tr>
                         ))}
-                        {stats.salesList.length === 0 && (
+                        {filteredSalesList.length === 0 && (
                             <tr>
-                                <td colSpan={3} className="px-6 py-10 text-center text-muted-foreground italic">Operatsiyalar yo'q</td>
+                                <td colSpan={3} className="px-6 py-10 text-center text-muted-foreground italic">
+                                    {salesFilter === "all" ? "Operatsiyalar yo'q" : salesFilter === "full" ? "To'liq sotuvlar yo'q" : "Nasiya sotuvlar yo'q"}
+                                </td>
                             </tr>
                         )}
                     </tbody>

@@ -15,9 +15,10 @@ interface TelegramUser {
 
 interface Props {
   onSelected: (id: string) => void;
+  excludeIds?: string[];
 }
 
-export function TelegramUserSingleSelect({ onSelected }: Props) {
+export function TelegramUserSingleSelect({ onSelected, excludeIds = [] }: Props) {
   const [users, setUsers] = useState<TelegramUser[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -40,13 +41,16 @@ export function TelegramUserSingleSelect({ onSelected }: Props) {
       .includes(search.toLowerCase())
   );
 
-  const handleSelect = (telegramId: string) => {
-    if (selectedId === telegramId) {
+  const handleSelect = (user: TelegramUser) => {
+    const isAttached = excludeIds.includes(user.telegramId);
+    if (isAttached) return; // Cannot select attached users
+    
+    if (selectedId === user.telegramId) {
       setSelectedId(null);
       onSelected("");
     } else {
-      setSelectedId(telegramId);
-      onSelected(telegramId);
+      setSelectedId(user.telegramId);
+      onSelected(user.telegramId);
     }
     setIsOpen(false);
   };
@@ -107,25 +111,35 @@ export function TelegramUserSingleSelect({ onSelected }: Props) {
                     const fullName = user.tempFullName
                       || (`${user.firstName} ${user.lastName || ''}`.trim())
                       || '—';
+                    const isAttached = excludeIds.includes(user.telegramId);
                     return (
                       <button
                         key={user.id}
-                        onClick={() => handleSelect(user.telegramId)}
+                        onClick={() => handleSelect(user)}
+                        disabled={isAttached}
                         className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left group ${
                           selectedId === user.telegramId
                             ? "bg-amber-500/10 text-amber-600"
+                            : isAttached
+                            ? "opacity-50 cursor-not-allowed bg-secondary/30"
                             : "hover:bg-secondary/80 text-foreground"
                         }`}
                       >
                         <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="font-bold text-sm leading-tight text-foreground group-hover:text-amber-600 transition-colors truncate">
+                          <span className={`font-bold text-sm leading-tight text-foreground transition-colors truncate ${
+                            isAttached ? "line-through text-muted-foreground" : "group-hover:text-amber-600"
+                          }`}>
                             {fullName}
                           </span>
                           {user.phoneNumber && (
-                            <span className="text-[11px] text-muted-foreground font-medium">📞 +{user.phoneNumber}</span>
+                            <span className={`text-[11px] font-medium ${isAttached ? "line-through text-muted-foreground/50" : "text-muted-foreground"}`}>
+                              📞 +{user.phoneNumber}
+                            </span>
                           )}
-                          {user.username && (
-                            <span className="text-[11px] text-muted-foreground">@{user.username}</span>
+                          {isAttached && (
+                            <span className="text-[9px] font-black uppercase text-destructive/70 tracking-tighter mt-0.5">
+                              Biriktirilgan
+                            </span>
                           )}
                         </div>
                         {selectedId === user.telegramId && (

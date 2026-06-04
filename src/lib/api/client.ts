@@ -309,8 +309,7 @@ export const API = {
       departmentId: data.categoryId || data.departmentId,
       stage: data.stage,
       remindAt: data.remindAt,
-      description: data.description,
-      // Pass other fields properly
+      description: data.description
     }
   }),
   deleteClient: (id: string) => api(`/clients/${id}`, { method: "DELETE" }),
@@ -319,7 +318,8 @@ export const API = {
   addNote: (id: string, text: string) => api(`/clients/${id}/notes`, { method: "POST", json: { text } }),
   addPayment: (id: string, amount: number) => api(`/clients/${id}/payments`, { method: "POST", json: { amount } }),
   deletePayment: (id: string) => api(`/clients/payments/${id}`, { method: "DELETE" }),
-  setSale: (id: string, data: any) => api(`/clients/${id}/sale`, { method: "PATCH", json: data }),
+  setSale: (id: string, data: any) => api(`/clients/${id}/sale`, { method: "PATCH", json: { ...data, status: data.status?.toLowerCase() } }),
+  warnClient: (id: string, remindAt: string) => api(`/clients/${id}/warn`, { method: "POST", json: { remindAt } }),
 
   // attendance
   attendance: (q: { employeeId?: string; date?: string } = {}) => {

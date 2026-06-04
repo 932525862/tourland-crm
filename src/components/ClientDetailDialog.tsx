@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "@/lib/store";
 import { X, Phone, MessageSquare, Bell, Trash2, ShoppingCart, CheckCircle2, AlertCircle } from "lucide-react";
 import type { Client, AppState, SaleInfo, ClientStage } from "@/lib/types";
@@ -30,15 +30,22 @@ interface Props {
 
 export function ClientDetailDialog({
   client,
+  state,
   onClose,
   onRefresh,
   viewerRole,
   viewerName,
   viewerId,
-  enableCallActions = false,
 }: Props) {
   const session = useSession();
   const [localClient, setLocalClient] = useState<Client>(client);
+
+  const attachedTelegramIds = useMemo(() => {
+    if (!state.clients) return [];
+    return state.clients
+      .filter((c: Client) => c.telegramId && c.id !== client.id)
+      .map((c: Client) => String(c.telegramId));
+  }, [state.clients, client.id]);
 
   useEffect(() => {
     setLocalClient(client);
@@ -168,13 +175,11 @@ export function ClientDetailDialog({
         totalAmount: total,
         paidAmount: paid,
         additionalPrice: addAmt,
-        nextPaymentAt: new Date(partialNextDate).toISOString()
+        nextPaymentAt: new Date(partialNextDate).toISOString(),
+        telegramId: leaseWarningTelegramId
       });
       await API.updateClient(localClient.id, { stage: "sold" });
       setLocalClient(prev => ({ ...prev, stage: "sold" }));
-      // Trigger Telegram warning message
-      setSingleTelegramId(leaseWarningTelegramId);
-      setShowTelegramModal(true);
       toast.success("Sotildi (bir qismi)");
       setShowPurchase(false);
       setShowSaleFlow(false);
@@ -592,6 +597,7 @@ export function ClientDetailDialog({
                     </div>
                     <TelegramUserSingleSelect
                       onSelected={(id) => setLeaseWarningTelegramId(id || null)}
+                      excludeIds={attachedTelegramIds}
                     />
                   </div>
 
@@ -686,6 +692,7 @@ export function ClientDetailDialog({
                                   setShowTelegramModal(true);
                                 }
                               }}
+                              excludeIds={attachedTelegramIds}
                             />
                           </div>
                         </>
