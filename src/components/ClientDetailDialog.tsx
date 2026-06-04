@@ -49,6 +49,22 @@ export function ClientDetailDialog({
 
   useEffect(() => {
     setLocalClient(client);
+    setNoteText("");
+    setMoveStage(client.stage);
+    setCallNote("");
+    setCallReminder("");
+    setShowPurchase(false);
+    setPurchaseMode("choose");
+    setFullBase("");
+    setFullAdditional("");
+    setPartialBase("");
+    setPartialAdditional("");
+    setPartialPaid("");
+    setPartialNextDate("");
+    setExtraAmount("");
+    setLeaseWarningTelegramId(null);
+    setSingleTelegramId(null);
+    setPaymentToDelete(null);
   }, [client]);
 
   const formatPrice = (val: string) => {
