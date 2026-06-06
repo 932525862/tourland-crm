@@ -4,7 +4,7 @@ import { useAppState, useSession } from "@/lib/store";
 import { ClientDetailDialog } from "@/components/ClientDetailDialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { ClientCard } from "@/components/ClientCard";
-import { UserPlus, Search, RefreshCw, Layers, ChevronDown } from "lucide-react";
+import { UserPlus, Search, RefreshCw, Layers, ChevronDown, Download } from "lucide-react";
 import { toast } from "sonner";
 import type { Client, ClientStage } from "@/lib/types";
 import { API } from "@/lib/api/client";
@@ -31,6 +31,7 @@ function DirectorClients() {
   const [openClient, setOpenClient] = useState<Client | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedTelegramIds, setSelectedTelegramIds] = useState<string[]>([]);
   const [showTelegramModal, setShowTelegramModal] = useState(false);
@@ -51,6 +52,112 @@ function DirectorClients() {
       toast.error("Ma'lumotlarni yuklashda xatolik");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportLeads = async () => {
+    if (!currentCat) {
+      toast.error("Bo'lim tanlanmadi");
+      return;
+    }
+    const clientsInCat = state.clients.filter(c => c.categoryId === currentCat.id);
+    if (clientsInCat.length === 0) {
+      toast.info("Ushbu bo'limda hech qanday lid yo'q");
+      return;
+    }
+    try {
+      setExporting(true);
+      // Build CSV with ordered columns and cleaned values
+      // Collect all data keys present in this category so we can output them as separate columns
+      const dataKeysSet = new Set<string>();
+      clientsInCat.forEach(c => {
+        if (c.data) Object.keys(c.data).forEach(k => dataKeysSet.add(k));
+      });
+      const dataKeys = Array.from(dataKeysSet).sort();
+
+      const headers = [
+        "name",
+        "phone",
+        "stage",
+        "formTitle",
+        "createdAt",
+        "telegramUsername",
+        "description",
+        "notes",
+        ...dataKeys,
+      ];
+
+      const escape = (v: unknown) => {
+        if (v === null || v === undefined) return '""';
+        const s = typeof v === 'string' ? v : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+
+      const normalizePhone = (raw?: string) => {
+        if (!raw) return "";
+        const digits = (raw || "").replace(/\D/g, "");
+        if (!digits) return "";
+        // Uzbekistan heuristics: if 9 digits (local) -> +998XXXXXXXXX
+        if (digits.length === 9) return `+998${digits}`;
+        // if starts with 0 and 10 digits -> drop leading 0 and add +998
+        if (digits.length === 10 && digits.startsWith('0')) return `+998${digits.slice(1)}`;
+        // if already has country code 998
+        if (digits.length === 12 && digits.startsWith('998')) return `+${digits}`;
+        // fallback: prefix plus
+        return `+${digits}`;
+      };
+
+      const formatDate = (iso?: string) => {
+        if (!iso) return "";
+        try {
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) return iso;
+          // YYYY-MM-DD HH:MM (local)
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mm = String(d.getMinutes()).padStart(2, '0');
+          return `${y}-${m}-${day} ${hh}:${mm}`;
+        } catch (e) {
+          return iso;
+        }
+      };
+
+      const rows = clientsInCat.map(c => {
+        const notes = (c.notes || []).map(n => `${n.authorName || n.authorRole}: ${n.text.replace(/\s+/g,' ')}`).join(' | ');
+        const rowBase = [
+          c.name || "",
+          normalizePhone(c.phone),
+          c.stage || "",
+          c.formTitle || "",
+          formatDate(c.createdAt),
+          c.telegramUsername || "",
+          c.description || "",
+          notes,
+        ];
+        const dataValues = dataKeys.map(k => (c.data && c.data[k]) ? c.data[k] : "");
+        return [...rowBase, ...dataValues].map(escape).join(',');
+      });
+
+      const csv = [headers.map(escape).join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const fileNameSafe = (currentCat.name || "leads").replace(/[^a-z0-9_-]/gi, "_");
+      const date = new Date().toISOString().slice(0,10);
+      link.href = url;
+      link.setAttribute("download", `leads_${fileNameSafe}_${date}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Lidlar CSV formatda yuklab olindi");
+    } catch (err) {
+      console.error(err);
+      toast.error("Yuklash davomida xatolik yuz berdi");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -149,6 +256,13 @@ function DirectorClients() {
             className="p-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/30 hover:shadow-sm transition-all"
           >
             <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={exportLeads}
+            disabled={exporting}
+            className="p-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/30 hover:shadow-sm transition-all"
+          >
+            <Download className={`w-6 h-6 ${exporting ? 'animate-spin' : ''}`} />
           </button>
           {session?.isActive !== false && (
             <button
