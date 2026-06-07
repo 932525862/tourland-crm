@@ -4,7 +4,7 @@ import { useAppState, useSession } from "@/lib/store";
 import { ClientDetailDialog } from "@/components/ClientDetailDialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { ClientCard } from "@/components/ClientCard";
-import { UserPlus, RefreshCw, Search, Layers, ChevronDown, FileSpreadsheet } from "lucide-react";
+import { UserPlus, RefreshCw, Search, Layers, ChevronDown, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { API } from "@/lib/api/client";
 import { playNotificationSound, showBrowserNotification } from "@/lib/notify";
@@ -175,7 +175,7 @@ function EmployeeClients() {
                 title="Exceldan import qilish"
                 className="inline-flex items-center justify-center p-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-green-500 hover:border-green-500/30 hover:shadow-sm transition-all"
               >
-                <FileSpreadsheet className="w-6 h-6" />
+                <FileUp className="w-6 h-6" />
               </button>
               <button
                 onClick={() => setShowAddClient(true)}

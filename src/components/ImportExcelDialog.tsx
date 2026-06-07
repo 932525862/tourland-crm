@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { X, FileSpreadsheet, Layers, Upload, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, FileUp, Layers, Upload, CheckCircle2, AlertCircle } from "lucide-react";
 import type { AppState, ClientCategory } from "@/lib/types";
 import { toast } from "sonner";
 import { API } from "@/lib/api/client";
@@ -98,7 +98,7 @@ export function ImportExcelDialog({ state, defaultCategoryId, onClose, onImporte
         <div className="flex items-center justify-between p-6 border-b border-border bg-secondary/10">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center text-primary">
-              <FileSpreadsheet className="w-6 h-6" />
+              <FileUp className="w-6 h-6" />
             </div>
             Excel import
           </h2>
@@ -143,7 +143,7 @@ export function ImportExcelDialog({ state, defaultCategoryId, onClose, onImporte
                 accept=".xlsx, .xls"
                 className="hidden"
               />
-              <FileSpreadsheet className={`w-12 h-12 mx-auto mb-4 ${file ? "text-green-500" : "text-muted-foreground/30"}`} />
+              <FileUp className={`w-12 h-12 mx-auto mb-4 ${file ? "text-green-500" : "text-muted-foreground/30"}`} />
               {file ? (
                 <div>
                   <div className="font-bold text-foreground truncate max-w-[250px] mx-auto">{file.name}</div>

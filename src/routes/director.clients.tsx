@@ -4,7 +4,7 @@ import { useAppState, useSession } from "@/lib/store";
 import { ClientDetailDialog } from "@/components/ClientDetailDialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { ClientCard } from "@/components/ClientCard";
-import { UserPlus, Search, RefreshCw, Layers, ChevronDown, Download, FileSpreadsheet } from "lucide-react";
+import { UserPlus, Search, RefreshCw, Layers, ChevronDown, Download, UploadIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { Client, ClientStage } from "@/lib/types";
 import { API } from "@/lib/api/client";
@@ -273,7 +273,7 @@ function DirectorClients() {
                 title="Exceldan import qilish"
                 className="inline-flex items-center justify-center p-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-green-500 hover:border-green-500/30 hover:shadow-sm transition-all"
               >
-                <FileSpreadsheet className="w-6 h-6" />
+                <UploadIcon className="w-6 h-6" />
               </button>
               <button
                 onClick={() => setShowAddClient(true)}
