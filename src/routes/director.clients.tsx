@@ -457,9 +457,9 @@ function DirectorClients() {
           setShowExportConfirm(false);
           exportLeads();
         }}
-        title="Eksport qilish"
+        title="Yuklab olish"
         description="Ma'lumotlarni CSV formatida yuklab olishni tasdiqlaysizmi?"
-        confirmLabel="Eksport"
+        confirmLabel="Yuklab olish"
         tone="info"
       />
 
