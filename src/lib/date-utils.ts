@@ -8,7 +8,8 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(relativeTime);
 dayjs.locale("uz-latn");
-dayjs.tz.setDefault("Asia/Tashkent");
+// We avoid setting a default timezone globally to prevent unpredictable parsing behavior.
+// Instead, we explicitly use .tz() on a UTC-anchored dayjs object.
 
 const MONTHS_UZ = [
   "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
@@ -24,10 +25,15 @@ const WEEKDAYS_SHORT_UZ = [
 ];
 
 /**
- * Returns a dayjs object localized to Tashkent
+ * Returns a dayjs object with UTC+5 offset (Tashkent / Asia/Tashkent).
+ * Uses explicit utcOffset instead of IANA timezone to avoid bundle issues.
  */
 export function getTashkentDayjs(date?: string | Date | number) {
-  return dayjs(date).tz("Asia/Tashkent");
+  if (!date) return dayjs.utc().utcOffset(300);  // UTC+5 = 300 minutes
+  
+  // Always parse as UTC first, then shift to UTC+5 (Tashkent).
+  // This avoids dependency on the IANA timezone database which may not be available in the browser bundle.
+  return dayjs.utc(date).utcOffset(300);
 }
 
 /**

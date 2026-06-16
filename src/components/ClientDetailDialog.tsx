@@ -26,6 +26,7 @@ interface Props {
   viewerName: string;
   viewerId?: string;
   enableCallActions?: boolean;
+  readOnly?: boolean;
 }
 
 export function ClientDetailDialog({
@@ -36,6 +37,7 @@ export function ClientDetailDialog({
   viewerRole,
   viewerName,
   viewerId,
+  readOnly = false,
 }: Props) {
   const session = useSession();
   const [localClient, setLocalClient] = useState<Client>(client);
@@ -115,7 +117,7 @@ export function ClientDetailDialog({
   const [editedDescription, setEditedDescription] = useState(client.description || "");
 
   const handleAddNote = async () => {
-    if (!noteText.trim()) return;
+    if (!noteText.trim() || readOnly) return;
     setLoading(true);
     try {
       await API.addNote(localClient.id, noteText.trim());
@@ -480,7 +482,7 @@ export function ClientDetailDialog({
                   ) : (
                     <>
                       <span className="text-foreground font-medium truncate">{localClient.name}</span>
-                      {viewerRole === "director" && (
+                      {viewerRole === "director" && !readOnly && (
                         <button 
                           onClick={() => setIsEditingName(true)}
                           className="p-1.5 hover:bg-secondary rounded-lg transition-all"
@@ -514,7 +516,7 @@ export function ClientDetailDialog({
                   ) : (
                     <>
                       <span className="text-foreground font-medium truncate">{localClient.phone}</span>
-                      {viewerRole === "director" && (
+                      {viewerRole === "director" && !readOnly && (
                         <button 
                           onClick={() => setIsEditingPhone(true)}
                           className="p-1.5 hover:bg-secondary rounded-lg transition-all"
@@ -548,7 +550,7 @@ export function ClientDetailDialog({
                   ) : (
                     <>
                       <span className="text-foreground font-medium break-words">{localClient.description || "—"}</span>
-                      {viewerRole === "director" && (
+                      {viewerRole === "director" && !readOnly && (
                         <button 
                           onClick={() => setIsEditingDescription(true)}
                           className="p-1.5 hover:bg-secondary rounded-lg transition-all"
@@ -572,8 +574,8 @@ export function ClientDetailDialog({
             </div>
           </section>
 
-          {/* Call section - show for ALL stages except Sold, unless a call is active. Hide during sale flow. */}
-          {!showSaleFlow && (
+          {/* Call section - show for ALL stages except Sold, unless a call is active. Hide during sale flow. Hide if readOnly. */}
+          {!showSaleFlow && !readOnly && (
             <section className="rounded-xl border border-border p-4 space-y-4">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Phone className="w-4 h-4" /> Qo'ng'iroq
@@ -615,7 +617,7 @@ export function ClientDetailDialog({
           </section>
           )}
 
-          {/* Sale section - only show if sold or already has sale */}
+          {/* Sale section - only show if sold or already has sale. Hide action buttons if readOnly. */}
           {(localClient.stage === "sold" || sale.status !== "none" || showSaleFlow) && (
             <section className="rounded-xl border border-border p-4 space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -625,7 +627,7 @@ export function ClientDetailDialog({
               {sale.status === "none" && !showPurchase && (
                 <button
                   onClick={() => setShowPurchase(true)}
-                  disabled={session?.isActive === false}
+                  disabled={session?.isActive === false || readOnly}
                   className="w-full py-2.5 rounded-lg bg-success text-white font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Sotuvni rasmiylashtirish
@@ -799,15 +801,27 @@ export function ClientDetailDialog({
                       {sale.payments.map((p) => (
                         <div key={p.id} className="flex items-center justify-between text-xs bg-secondary/30 rounded-lg p-2 group/pay">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">{p.amount.toLocaleString()}</span>
-                            <span className="text-muted-foreground">{formatUzDate(p.createdAt)}</span>
+                             <span className="text-muted-foreground">{formatUzDate(p.createdAt)}</span>
+                             <span className="font-bold text-foreground">{p.amount.toLocaleString()}</span>
                           </div>
-                          <button 
-                            onClick={() => setPaymentToDelete(p.id)}
-                            className="opacity-0 group-hover/pay:opacity-100 p-1 rounded-md text-destructive hover:bg-destructive/10 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!readOnly && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover/pay:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => { setSingleTelegramId(null); setShowTelegramModal(true); }}
+                                className="p-1 hover:bg-primary/10 text-primary rounded"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </button>
+                              {viewerRole === "director" && (
+                                <button 
+                                  onClick={() => setPaymentToDelete(p.id)}
+                                  className="p-1 hover:bg-destructive/10 text-destructive rounded"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -816,7 +830,7 @@ export function ClientDetailDialog({
                   {sale.status === "partial" && (
                     <div className="space-y-2 border-t border-border pt-3">
                       <label className="text-[11px] font-bold text-muted-foreground uppercase">Yangi to'lov</label>
-                      {session?.isActive !== false ? (
+                      {!readOnly && session?.isActive !== false ? (
                         <>
                           <div className="flex gap-2 max-w-full">
                             <input type="text" inputMode="numeric" value={formatPrice(extraAmount)} onChange={(e) => setExtraAmount(parsePrice(e.target.value))} placeholder="0" className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-background text-sm" />
@@ -824,32 +838,17 @@ export function ClientDetailDialog({
                               To'lov qo'shish
                             </button>
                           </div>
-                          <button onClick={() => setShowFullPaymentConfirm(true)} disabled={loading} className="w-full mt-2 py-2 rounded-lg bg-success text-white text-sm font-medium">
-                            To'liq to'landi
+                          <button onClick={() => setShowFullPaymentConfirm(true)} className="w-full py-2 rounded-lg bg-success/15 text-success text-xs font-bold hover:bg-success/20 transition-colors">
+                            To'lovni yakunlash
                           </button>
-                          {/* Telegram Ogohlantirish for ongoing lease */}
-                          <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 mt-1">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-amber-700 mb-0.5">Telegram ogohlantirish</p>
-                              <p className="text-[11px] text-muted-foreground">Mijozga xabar yuborish (ixtiyoriy)</p>
-                            </div>
-                            <TelegramUserSingleSelect
-                              onSelected={(id) => {
-                                if (id) {
-                                  setSingleTelegramId(id);
-                                  setShowTelegramModal(true);
-                                }
-                              }}
-                              excludeIds={attachedTelegramIds}
-                            />
-                          </div>
                         </>
                       ) : (
-                        <p className="text-[10px] text-destructive font-bold italic">To'lovni qo'shish uchun hisob faol bo'lishi kerak</p>
+                        <p className="text-[10px] text-destructive font-bold italic">
+                          {readOnly ? "Ko'rish rejimida to'lov qo'shish mumkin emas" : "To'lovni qo'shish uchun hisob faol bo'lishi kerak"}
+                        </p>
                       )}
                     </div>
                   )}
-
                 </div>
               )}
             </section>
@@ -866,17 +865,19 @@ export function ClientDetailDialog({
               <input
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                disabled={session?.isActive === false}
-                placeholder={session?.isActive === false ? "Izoh qoldirish cheklangan..." : "Yangi izoh..."}
+                disabled={session?.isActive === false || readOnly}
+                placeholder={readOnly ? "Ko'rish rejimida izoh qoldirib bo'lmaydi" : session?.isActive === false ? "Izoh qoldirish cheklangan..." : "Yangi izoh..."}
                 className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               />
-              <button
-                onClick={handleAddNote}
-                disabled={loading || session?.isActive === false}
-                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover disabled:opacity-50"
-              >
-                Qo'shish
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={handleAddNote}
+                  disabled={loading || session?.isActive === false}
+                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover disabled:opacity-50"
+                >
+                  Qo'shish
+                </button>
+              )}
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {(!localClient.notes || localClient.notes.length === 0) ? (
@@ -901,7 +902,7 @@ export function ClientDetailDialog({
                 <AlertCircle className="w-3.5 h-3.5" /> Hisob faolsizlantirilgan
               </div>
             )}
-            {viewerRole === "director" && (
+            {viewerRole === "director" && !readOnly && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={loading || session?.isActive === false}

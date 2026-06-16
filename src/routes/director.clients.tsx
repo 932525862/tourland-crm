@@ -13,6 +13,15 @@ import { TelegramUserSelect } from "@/components/TelegramUserSelect";
 import { TelegramMessageModal } from "@/components/TelegramMessageModal";
 import { ImportExcelDialog } from "@/components/ImportExcelDialog";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const STAGES: { id: ClientStage; label: string }[] = [
   { id: "new", label: "Yangi" },
@@ -20,6 +29,8 @@ const STAGES: { id: ClientStage; label: string }[] = [
   { id: "talked", label: "Gaplashildi" },
   { id: "sold", label: "Sotildi" },
 ];
+
+const ITEMS_PER_PAGE = 20;
 
 export const Route = createFileRoute("/director/clients")({
   component: DirectorClients,
@@ -40,6 +51,7 @@ function DirectorClients() {
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -234,6 +246,17 @@ function DirectorClients() {
     });
   }, [state.clients, currentCat, stage, search]);
 
+  const paginatedClients = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCat, stage, search]);
+
   const counts = useMemo(() => {
     const inCat = state.clients.filter(c => c.categoryId === currentCat?.id);
     return {
@@ -364,11 +387,67 @@ function DirectorClients() {
           <p className="text-muted-foreground max-w-sm mx-auto">Siz tanlagan filtrlar bo'yicha hech qanday mijoz aniqlanmadi.</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((c) => (
-            <ClientCard key={c.id} client={c} onClick={() => setOpenClient(c)} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-10">
+            {paginatedClients.map((c) => (
+              <ClientCard key={c.id} client={c} onClick={() => setOpenClient(c)} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-10">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)); }}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {[...Array(totalPages)].map((_, i) => {
+                    const page = i + 1;
+                    if (
+                      page === 1 || 
+                      page === totalPages || 
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={page === currentPage}
+                            onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(totalPages, p + 1)); }}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
 
       <ConfirmModal

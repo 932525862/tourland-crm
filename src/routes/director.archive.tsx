@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { Archive, RefreshCw, Search, CheckSquare, Users, FileText, CalendarCheck, User, Clock, ExternalLink, X, ListChecks, CheckCheck, Calendar } from "lucide-react";
+import { Archive, RefreshCw, Search, CheckSquare, Users, FileText, CalendarCheck, User, Clock, ExternalLink, X, ListChecks, CheckCheck, Calendar, Layers } from "lucide-react";
 import { API } from "@/lib/api/client";
 import { formatUzStatus, formatUzDateTime, formatUzDate, getTashkentDayjs } from "@/lib/date-utils";
 import { toast } from "sonner";
@@ -34,21 +34,26 @@ const CATEGORIES = [
 ];
 
 const ACTION_LABELS: Record<string, string> = {
-  TASK_CREATED: "Vazifa yaratildi",
+  TASK_CREATED: "Yangi vazifa yaratildi",
   TASK_STATUS_CHANGED: "Vazifa holati o'zgardi",
   TASK_VERIFIED: "Vazifa tasdiqlandi",
   TASK_REJECTED: "Vazifa rad etildi",
   TASK_INCOMPLETE: "Vazifa yakunlanmadi",
-  PROFILE_UPDATED: "Profil yangilandi",
-  CLIENT_CREATED: "Mijoz qo'shildi",
-  CLIENT_UPDATED: "Mijoz yangilandi",
-  CLIENT_NOTE_ADDED: "Izoh qo'shildi",
-  CLIENT_PAYMENT_ADDED: "To'lov qo'shildi",
-  CLIENT_SALE_UPDATED: "Sotuv yangilandi",
-  FORM_CREATED: "Forma yaratildi",
-  FORM_UPDATED: "Forma yangilandi",
-  ATTENDANCE_CHECK_IN: "Kirishga belgilandi",
-  ATTENDANCE_CHECK_OUT: "Chiqishga belgilandi",
+  TASK_DAILY_INSTANCE_CREATED: "Kunlik vazifa nusxasi yaratildi",
+  PROFILE_UPDATED: "Profil ma'lumotlari yangilandi",
+  CLIENT_CREATED: "Yangi mijoz qo'shildi",
+  CLIENT_UPDATED: "Mijoz ma'lumotlari tahrirlandi",
+  CLIENT_DELETED: "Mijoz tizimdan o'chirildi",
+  CLIENT_NOTE_ADDED: "Mijozga izoh qo'shildi",
+  CLIENT_PAYMENT_ADDED: "To'lov qabul qilindi",
+  CLIENT_PAYMENT_DELETED: "To'lov o'chirildi",
+  CLIENT_SALE_UPDATED: "Sotuv shartlari o'zgartirildi",
+  FORM_CREATED: "Yangi forma yaratildi",
+  FORM_UPDATED: "Forma tahrirlandi",
+  DEPARTMENT_CREATED: "Yangi bo'lim qo'shildi",
+  DEPARTMENT_UPDATED: "Bo'lim nomi o'zgartirildi",
+  ATTENDANCE_CHECK_IN: "Ishga kelganligi qayd etildi",
+  ATTENDANCE_CHECK_OUT: "Ishdan ketganligi qayd etildi",
 };
 
 const ACTION_COLORS: Record<string, { bg: string; text: string; icon: React.ElementType }> = {
@@ -56,6 +61,7 @@ const ACTION_COLORS: Record<string, { bg: string; text: string; icon: React.Elem
   CLIENT: { bg: "bg-emerald-500/10", text: "text-emerald-500", icon: Users },
   FORM: { bg: "bg-violet-500/10", text: "text-violet-500", icon: FileText },
   ATTENDANCE: { bg: "bg-amber-500/10", text: "text-amber-500", icon: CalendarCheck },
+  SYSTEM: { bg: "bg-blue-500/10", text: "text-blue-500", icon: Layers },
   DEFAULT: { bg: "bg-secondary", text: "text-muted-foreground", icon: Clock },
 };
 
@@ -64,17 +70,31 @@ function getCategory(actionType: string) {
   if (actionType.startsWith("CLIENT")) return "CLIENT";
   if (actionType.startsWith("FORM")) return "FORM";
   if (actionType.startsWith("ATTENDANCE")) return "ATTENDANCE";
+  if (actionType.startsWith("DEPARTMENT") || actionType.startsWith("PROFILE")) return "SYSTEM";
   return "DEFAULT";
 }
 
 function getStatusColor(status: string) {
   switch (status?.toLowerCase()) {
-    case "todo": return "bg-secondary text-secondary-foreground border-border";
-    case "in_progress": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-    case "pending": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-    case "done": return "bg-success/15 text-success border-success/20";
-    case "rejected": return "bg-destructive/15 text-destructive border-destructive/20";
-    case "incomplete": return "bg-destructive/10 text-destructive grayscale opacity-70";
+    case "todo":
+    case "new":
+      return "bg-secondary text-secondary-foreground border-border";
+    case "in_progress":
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    case "pending":
+      return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+    case "done":
+    case "approved":
+    case "sold":
+      return "bg-success/15 text-success border-success/20";
+    case "rejected":
+      return "bg-destructive/15 text-destructive border-destructive/20";
+    case "incomplete":
+      return "bg-destructive/10 text-destructive grayscale opacity-70";
+    case "no_answer":
+      return "bg-rose-500/10 text-rose-500 border-rose-500/20";
+    case "talked":
+      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
     default: return "bg-muted text-muted-foreground border-border";
   }
 }
@@ -288,24 +308,47 @@ function DirectorArchive() {
                   </div>
 
                   {log.details?.title && (
-                    <p className="text-sm text-foreground/70 mb-1">"{log.details.title}"</p>
+                    <p className="text-sm font-medium text-foreground/80 mb-1">
+                      <span className="text-muted-foreground font-normal">Sarlavha:</span> "{log.details.title}"
+                    </p>
                   )}
                   {log.details?.fullName && (
-                    <p className="text-sm text-foreground/70 mb-1">{log.details.fullName}</p>
+                    <p className="text-sm font-medium text-foreground/80 mb-1">
+                      <span className="text-muted-foreground font-normal">Mijoz:</span> {log.details.fullName}
+                    </p>
                   )}
                   {log.details?.amount !== undefined && (
-                    <p className="text-sm text-emerald-500 font-semibold mb-1">
-                      +{log.details.amount.toLocaleString()} so'm
+                    <p className="text-sm text-emerald-600 font-bold mb-1">
+                      <span className="text-muted-foreground font-normal">Summa:</span> +{log.details.amount.toLocaleString()} so'm
+                    </p>
+                  )}
+                  {log.details?.text && (
+                    <p className="text-sm italic text-foreground/70 mb-1 border-l-2 border-border pl-2">
+                       "{log.details.text.length > 60 ? log.details.text.slice(0, 60) + "..." : log.details.text}"
                     </p>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {log.details?.oldStage && (
+                      <>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.oldStage)}`}>
+                           {formatUzStatus(log.details.oldStage)}
+                        </span>
+                        <span className="text-muted-foreground text-[10px]">→</span>
+                      </>
+                    )}
+                    {log.details?.newStage && (
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.newStage)}`}>
+                         {formatUzStatus(log.details.newStage)}
+                      </span>
+                    )}
+
                     {log.details?.oldStatus && (
                       <>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(log.details.oldStatus)}`}>
                           {formatUzStatus(log.details.oldStatus)}
                         </span>
-                        <span className="text-muted-foreground">→</span>
+                        <span className="text-muted-foreground text-[10px]">→</span>
                       </>
                     )}
                     {log.details?.newStatus && (

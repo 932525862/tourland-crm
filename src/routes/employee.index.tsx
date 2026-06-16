@@ -14,8 +14,20 @@ import { TelegramUserSelect } from "@/components/TelegramUserSelect";
 import { TelegramMessageModal } from "@/components/TelegramMessageModal";
 import { ImportExcelDialog } from "@/components/ImportExcelDialog";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
-const STAGES: { id: ClientStage; label: string }[] = [
+const ITEMS_PER_PAGE = 20;
+
+const STAGES: { id: ClientStage | "all"; label: string }[] = [
+  { id: "all", label: "Umumiy" },
   { id: "new", label: "Yangi" },
   { id: "no_answer", label: "Ko'tarmadi" },
   { id: "talked", label: "Gaplashildi" },
@@ -30,7 +42,7 @@ function EmployeeClients() {
   const { state, update } = useAppState();
   const session = useSession();
   const [activeCat, setActiveCat] = useState("");
-  const [stage, setStage] = useState<ClientStage>("new");
+  const [stage, setStage] = useState<ClientStage | "all">("new");
   const [openClient, setOpenClient] = useState<Client | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [showImportExcel, setShowImportExcel] = useState(false);
@@ -39,6 +51,7 @@ function EmployeeClients() {
   const [selectedTelegramIds, setSelectedTelegramIds] = useState<string[]>([]);
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const meName = session?.name || "Hodim";
 
@@ -132,7 +145,7 @@ function EmployeeClients() {
   const filtered = useMemo(() => {
     return state.clients.filter((c) => {
       const matchesCat = c.categoryId === currentCat?.id;
-      const matchesStage = c.stage === stage;
+      const matchesStage = stage === "all" || c.stage === stage;
       const matchesSearch = !search || 
         (c.name || "").toLowerCase().includes(search.toLowerCase()) || 
         (c.phone || "").includes(search);
@@ -140,14 +153,26 @@ function EmployeeClients() {
     });
   }, [state.clients, currentCat, stage, search]);
 
+  const paginatedClients = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCat, stage, search]);
+
   const countsForCat = useMemo(() => {
     const inCat = state.clients.filter(c => c.categoryId === currentCat?.id);
     return {
+      all: inCat.length,
       new: inCat.filter((c) => c.stage === "new").length,
       no_answer: inCat.filter((c) => c.stage === "no_answer").length,
       talked: inCat.filter((c) => c.stage === "talked").length,
       sold: inCat.filter((c) => c.stage === "sold").length,
-    };
+    } as Record<string, number>;
   }, [state.clients, currentCat]);
 
   if (!session || session.role !== "employee") return null;
@@ -233,7 +258,6 @@ function EmployeeClients() {
         </div>
       </div>
 
-      {/* Stage selector */}
       <div className="flex flex-wrap gap-1.5 mb-10 p-1.5 bg-secondary/50 rounded-[22px] w-fit border border-border/40">
         {STAGES.map((s) => (
           <button
@@ -265,11 +289,69 @@ function EmployeeClients() {
           <p className="text-muted-foreground max-w-sm mx-auto">Siz tanlagan filtrlar bo'yicha hech qanday mijoz aniqlanmadi.</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((c) => (
-            <ClientCard key={c.id} client={c} onClick={() => setOpenClient(c)} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-10">
+            {paginatedClients.map((c) => (
+              <ClientCard key={c.id} client={c} onClick={() => setOpenClient(c)} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-10">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)); }}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {[...Array(totalPages)].map((_, i) => {
+                    const page = i + 1;
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 || 
+                      page === totalPages || 
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            isActive={page === currentPage}
+                            onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    // Show ellipses
+                    if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(totalPages, p + 1)); }}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
 
       <ConfirmModal
@@ -295,6 +377,7 @@ function EmployeeClients() {
           viewerName={meName}
           viewerId={session?.id}
           enableCallActions
+          readOnly={stage === "all"}
         />
       )}
 

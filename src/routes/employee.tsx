@@ -36,7 +36,9 @@ function EmployeeLayout() {
           canAccessForms: user.canAccessForms
         });
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useSocketEvent("userUpdated", fetchSessionSync);
