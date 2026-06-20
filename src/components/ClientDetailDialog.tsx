@@ -83,6 +83,7 @@ export function ClientDetailDialog({
   const [moveStage, setMoveStage] = useState<ClientStage>(client.stage);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showResellConfirm, setShowResellConfirm] = useState(false);
   const [showSaleFlow, setShowSaleFlow] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [callNote, setCallNote] = useState("");
@@ -307,6 +308,49 @@ export function ClientDetailDialog({
     } finally {
       setLoading(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleResell = async () => {
+    // Duplicate the current (sold) client as a new lead so the original sale history remains intact.
+    setLoading(true);
+    try {
+      // Create a new client with the same basic info in the same category/department
+      const created = await API.createClient({
+        name: localClient.name,
+        phone: localClient.phone,
+        categoryId: localClient.categoryId,
+        description: `Qayta sotish: nusxa (manba mijoz id: ${localClient.id})`
+      });
+
+      // Ensure the new client is in the 'new' stage
+      try {
+        await API.updateClient(created.id || created._id || created.clientId || String((created as any).id), { stage: "new" });
+      } catch (e) {
+        // ignore stage update failure — creation still provides a new lead
+      }
+
+      // Add a note to the original sold client preserving sale summary
+      const saleSummaryParts: string[] = [];
+      if (localClient.sale) {
+        saleSummaryParts.push(`Old sale status: ${localClient.sale.status}`);
+        if (localClient.sale.totalAmount) saleSummaryParts.push(`Total: ${localClient.sale.totalAmount}`);
+        if (localClient.sale.soldAt) saleSummaryParts.push(`Sold at: ${localClient.sale.soldAt}`);
+        if (localClient.sale.payments && localClient.sale.payments.length > 0) {
+          saleSummaryParts.push(`Payments: ${localClient.sale.payments.map(p => `${p.amount}@${p.createdAt}`).join('; ')}`);
+        }
+      }
+      saleSummaryParts.push(`New lead created: id=${(created as any).id || (created as any)._id || ''}`);
+      await API.addNote(localClient.id, `Qayta sotish amalga oshirildi. ${saleSummaryParts.join(' | ')}`);
+
+      toast.success("Qayta sotish uchun yangi lid yaratildi");
+      setShowResellConfirm(false);
+      onRefresh();
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message || "Qayta sotish bajarilmadi");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -865,6 +909,19 @@ export function ClientDetailDialog({
                 <MessageSquare className="w-4 h-4" /> Izohlar ({localClient.notes?.length || 0})
               </h3>
             </div>
+            {/* Prominent resell action placed above the note input */}
+            {viewerRole === "director" && !readOnly && localClient.stage === "sold" && (
+              <div className="mb-3">
+                <button
+                  onClick={() => setShowResellConfirm(true)}
+                  disabled={loading || session?.isActive === false}
+                  className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-black shadow-lg hover:shadow-glow transition-all flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart className="w-4 h-4" /> Qayta sotish — yangi lid yaratish
+                </button>
+                <p className="text-[11px] text-muted-foreground mt-2">Asosiy mijozning sotuv tarixlari saqlanadi; yangi lid "Yangi" bo'limida paydo bo'ladi.</p>
+              </div>
+            )}
             <div className="flex gap-2 mb-3">
               <input
                 value={noteText}
@@ -963,6 +1020,17 @@ export function ClientDetailDialog({
         description="Ushbu to'lovni o'chirishni tasdiqlaysizmi? Bu harakat sotuv balansiga ta'sir qiladi."
         confirmLabel="O'chirish"
         tone="destructive"
+        loading={loading}
+      />
+
+      <ConfirmModal
+        isOpen={showResellConfirm}
+        onClose={() => setShowResellConfirm(false)}
+        onConfirm={handleResell}
+        title="Qayta sotish"
+        description="Ushbu mijoz uchun yangi lid yaratilsinmi? Asosiy (sotilgan) mijoz tarixlari saqlanadi."
+        confirmLabel="Yaratish"
+        tone="primary"
         loading={loading}
       />
 

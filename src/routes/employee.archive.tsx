@@ -320,12 +320,10 @@ function EmployeeArchive() {
                   </div>
                 </div>
                 <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
-                  {log.user && (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-foreground">
-                      <User className="w-3 h-3 text-muted-foreground" />
-                      {log.user.firstName} {log.user.lastName}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-foreground">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    {log.user ? `${log.user.firstName} ${log.user.lastName}` : "Tizim"}
+                  </div>
                   <div className="text-[10px] font-medium text-muted-foreground">
                     {formatUzDateTime(log.createdAt)}
                   </div>

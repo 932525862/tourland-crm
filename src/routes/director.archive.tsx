@@ -4,7 +4,6 @@ import { Archive, RefreshCw, Search, CheckSquare, Users, FileText, CalendarCheck
 import { API } from "@/lib/api/client";
 import { formatUzStatus, formatUzDateTime, formatUzDate, getTashkentDayjs } from "@/lib/date-utils";
 import { toast } from "sonner";
-import dayjs from "dayjs";
 import "dayjs/locale/uz-latn";
 import {
   Dialog,
@@ -361,12 +360,10 @@ function DirectorArchive() {
                   </div>
                 </div>
                 <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
-                  {log.user && (
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                      <User className="w-3 h-3 text-muted-foreground" />
-                      {log.user.firstName} {log.user.lastName}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    {log.user ? `${log.user.firstName} ${log.user.lastName}` : "Tizim"}
+                  </div>
                   <div className="text-[10px] text-muted-foreground">
                     {formatUzDateTime(log.createdAt)}
                   </div>
