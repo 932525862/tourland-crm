@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { useSession, useAppState } from "@/lib/store";
 import { User, Users, FileText, UserPlus, ClipboardCheck, ListChecks, BarChart3, Layers, Archive, Bell, Globe } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
+import { InactivityModal } from "@/components/InactivityModal";
 
 export const Route = createFileRoute("/director")({
   component: DirectorLayout,
@@ -45,6 +46,7 @@ function DirectorLayout() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      <InactivityModal />
       <MobileNav title="Direktor kabineti" subtitle="Boshqaruv paneli" items={navItems} />
       <CrmSidebar
         title="Direktor kabineti"

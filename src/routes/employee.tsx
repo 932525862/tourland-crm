@@ -7,6 +7,7 @@ import { Users, Archive, User as UserIcon, ClipboardCheck, ListChecks, Layers, B
 import { useSocketEvent } from "@/lib/api/socket";
 import { API } from "@/lib/api/client";
 import { useNotifications } from "@/hooks/use-notifications";
+import { InactivityModal } from "@/components/InactivityModal";
 
 export const Route = createFileRoute("/employee")({
   component: EmployeeLayout,
@@ -75,6 +76,7 @@ function EmployeeLayout() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      <InactivityModal />
       <MobileNav title={session.name} subtitle="Hodim kabineti" items={navItems} />
       <CrmSidebar
         title={session.name}
